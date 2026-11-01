@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rincewinder — náhled wireframů</title>
+<style>
+:root{
+  --bg:#0f1114;--surf:#1a1d22;--surf2:#23272e;--line:#2f343c;
+  --fg:#e8eaee;--fg2:#9aa3ad;--ok:#4cd27a;--warn:#f5c542;--err:#ff6b6b;
+  --acc:#ff8a3d;--acc-fg:#1a0e05;
+  --phone-w:360px;--phone-h:780px;
+}
+[data-acc="modra"]{--acc:#6aa9ff;--acc-fg:#061324}
+[data-acc="zelena"]{--acc:#5fd37a;--acc-fg:#06200d}
+*{box-sizing:border-box}
+body{margin:0;background:#07080a;color:var(--fg);font:14px/1.4 system-ui,Roboto,"Segoe UI",sans-serif;padding:16px}
+h1{font-size:18px;margin:0 0 4px}
+h2{font-size:13px;color:var(--fg2);font-weight:500;margin:0 0 12px}
+.ctrl{display:flex;flex-wrap:wrap;gap:12px 24px;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:20px;position:sticky;top:8px;z-index:9}
+.ctrl label{color:var(--fg2);margin-right:6px}
+.ctrl button{background:var(--surf2);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 12px;margin-right:4px;cursor:pointer}
+.ctrl button.on{background:var(--acc);color:var(--acc-fg);border-color:var(--acc)}
+.row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;margin-bottom:32px}
+.cap{width:var(--phone-w);color:var(--fg2);font-size:12px;margin-top:6px}
+.cap b{color:var(--fg)}
+/* telefon */
+.phone{width:var(--phone-w);height:var(--phone-h);background:var(--bg);border:8px solid #2a2e35;border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.status{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:11px;color:var(--fg2)}
+.app{flex:1;overflow:hidden;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600}
+.top .ico{width:28px;height:28px}
+.card{background:var(--surf);border-radius:16px;padding:14px}
+.card h3{margin:0 0 6px;font-size:12px;font-weight:500;color:var(--fg2);text-transform:uppercase;letter-spacing:.04em}
+.big{font-size:22px;font-weight:600}
+.sub{color:var(--fg2);font-size:13px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.err{background:var(--err)}
+.btn{display:flex;align-items:center;justify-content:center;background:var(--acc);color:var(--acc-fg);font-weight:700;font-size:18px;border-radius:999px;height:64px;margin-top:auto}
+.btn.sec{background:var(--surf2);color:var(--fg);font-size:15px;height:48px;font-weight:600}
+.btn.small{height:40px;font-size:14px;margin-top:0}
+.nav{height:72px;display:flex;border-top:1px solid var(--line);background:var(--surf)}
+.nav div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--fg2);gap:4px}
+.nav div.on{color:var(--acc)}
+.nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8}
+.hint{background:#2b2411;border:1px solid #5a4a16;border-radius:12px;padding:10px 12px;font-size:13px}
+.hint b{color:var(--warn)}
+/* mřížka */
+.chips{display:flex;gap:8px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--fg2)}
+.chip.on{background:var(--acc);color:var(--acc-fg);border-color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.th{aspect-ratio:3/2;border-radius:8px;position:relative;overflow:hidden;background:linear-gradient(135deg,#3a4350,#1f242b)}
+.th.a{background:linear-gradient(160deg,#5a6b4a,#232a1c)}.th.b{background:linear-gradient(160deg,#6b4a3f,#2a1d19)}.th.c{background:linear-gradient(160deg,#3f5a6b,#19242a)}
+.th .n{position:absolute;left:5px;bottom:4px;font-size:9px;color:#fff;opacity:.85;text-shadow:0 1px 2px #000}
+.th .bd{position:absolute;right:4px;top:4px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.bd.ov{background:var(--ok);color:#042;font-size:9px;letter-spacing:-1px}.bd.st{outline:1.5px solid var(--ok);outline-offset:-1.5px;background:transparent!important;color:var(--ok)!important}.bd.st{background:#2b6b44;color:#cfc}.bd.pr{background:#000a;color:#fff;font-size:8px;border:2px solid var(--acc)}
+.bd.er{background:var(--err);color:#300}.bd.dl{background:#555;color:#ccc}
+.th.sel{outline:3px solid var(--acc);outline-offset:-3px}
+.th.dim{opacity:.4}
+.th .chk{position:absolute;left:4px;top:4px;width:18px;height:18px;border-radius:50%;background:var(--acc);color:var(--acc-fg);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11px;color:var(--fg2)}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+.legend .bd{position:static;width:14px;height:14px;font-size:9px}
+/* seznamy */
+.li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li .t{flex:1}.li .t small{display:block;color:var(--fg2)}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--surf2);color:var(--fg2)}
+.pill.up{background:var(--acc);color:var(--acc-fg);font-weight:700}
+.pill.bad{background:#4a1d1d;color:var(--err)}
+.cards2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cards2 .card{padding:12px}
+.bar{height:6px;border-radius:3px;background:var(--surf2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc)}
+/* notifikace */
+.lock{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(ellipse at top,#1d2230,#0f1114)}
+.clock{font-size:64px;font-weight:300;letter-spacing:-2px}
+.notif{width:92%;background:var(--surf);border-radius:18px;padding:12px 14px}
+.notif .h{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--fg2);margin-bottom:6px}
+.notif .h .ico{width:16px;height:16px}
+.notif .acts{display:flex;gap:16px;margin-top:8px;font-size:13px;color:var(--acc);font-weight:600}
+/* onboarding */
+.ob{flex:1;display:flex;flex-direction:column;gap:16px;justify-content:center;text-align:center;padding:0 8px}
+.ob h4{font-size:24px;margin:0}
+.ob p{color:var(--fg2);margin:0}
+.ob .ill{width:160px;height:160px;margin:0 auto;border-radius:32px;background:var(--surf);display:flex;align-items:center;justify-content:center}
+.dots{display:flex;gap:6px;justify-content:center}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--acc)}
+.field{background:var(--surf2);border-radius:12px;padding:10px 14px;text-align:left;color:var(--fg)}
+.field small{display:block;color:var(--fg2);font-size:11px}
+/* dialog */
+.dialog{position:absolute;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:24px}
+.dialog .box{background:var(--surf2);border-radius:24px;padding:20px;width:100%}
+.dialog h4{margin:0 0 8px;font-size:18px}
+.hold{height:56px;border-radius:999px;background:#4a1d1d;color:var(--err);display:flex;align-items:center;justify-content:center;font-weight:700;position:relative;overflow:hidden;margin-top:14px}
+.hold i{position:absolute;left:0;top:0;bottom:0;width:62%;background:#7a2b2b;z-index:0}
+.hold span{position:relative;z-index:1}
+/* displej těla */
+.cam{width:480px;height:320px;background:#000;border:14px solid #15161a;border-radius:10px;display:flex;color:#fff;font-family:"DejaVu Sans Mono",Consolas,monospace;position:relative}
+.cam .qr{width:220px;padding:14px;display:flex;align-items:center;justify-content:center;background:#fff}
+.cam .txt{flex:1;padding:16px 14px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.cam .txt .h{font-size:20px;font-weight:700;color:#ffb060}
+.cam .txt .ip{font-size:26px;font-weight:700;letter-spacing:1px}
+.cam .foot{position:absolute;left:0;right:0;bottom:0;background:#1a1a1a;padding:6px 14px;font-size:13px;display:flex;gap:12px;align-items:center}
+.cam .foot .bar{flex:1;background:#333}.cam .foot .bar i{background:#ffb060}
+.cam .txt .g{color:#9aa}
+/* ikona */
+.icon-grid{display:flex;gap:16px;align-items:center}
+.icon-grid .ib{width:96px;height:96px;border-radius:24px;display:flex;align-items:center;justify-content:center}
+.ia-b .nav{display:none}
+.ia-b .more{display:flex}
+.more{display:none}
+</style>
+</head>
+<body data-acc="oranzova" data-ia="a">
+
+<h1>Rincewinder — náhled wireframů</h1>
+<h2>Offline náhled bez závislostí. Rozhodnutí 1–6 zamčena 31. 10. 2026 (lišta A, oranžová, čepice); přepínače nahoře ukazují zamítnuté varianty.</h2>
+
+<div class="ctrl">
+  <div><label>Rozhodnutí 1 · navigace:</label>
+    <button class="on" data-set="ia" data-val="a">A · spodní lišta 4</button>
+    <button data-set="ia" data-val="b">B · Domů + „více“</button>
+  </div>
+  <div><label>Rozhodnutí 4 · akcent:</label>
+    <button class="on" data-set="acc" data-val="oranzova">oranžová (Rincewindova róba)</button>
+    <button data-set="acc" data-val="modra">modrá</button>
+    <button data-set="acc" data-val="zelena">zelená</button>
+  </div>
+</div>
+
+<!-- ===== DOMŮ ===== -->
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="status"><span>14:32</span><span>Wi‑Fi ▾ 🔋 81 %</span></div>
+      <div class="app">
+        <div class="top"><svg class="ico" viewBox="0 0 32 32"><use href="#ico-app"/></svg>Rincewinder</div>
+        <div class="card">
+          <h3>Tělo</h3>
+          <div class="big"><span class="dot ok"></span>A7 II připojena</div>
+          <div class="sub">Agent běží · 10.98.92.25 · −48 dBm · baterie 64 % · karta 41 GB volných</div>
+        </div>
+        <div class="card">
+          <h3>Nové snímky</h3>
+          <div class="big">23 nových ARW</div>
+          <div class="sub">1,1 GB · ~8 min při 2,3 MB/s (poslední přenos)</div>
+        </div>
+        <div class="card">
+          <h3>Poslední přenos</h3>
+          <div class="sub">Dnes 9:14 · 41 souborů · 2,0 GB · vše ověřeno ✓</div>
+        </div>
+        <div class="btn sec small more">Soubory · Apky · Diagnostika · ⋯</div>
+        <div class="btn">Stáhnout nové (23)</div>
+        <div class="btn sec">Vybrat ručně…</div>
+      </div>
+      <div class="nav">
+        <div class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10H3z"/></svg>Domů</div>
+        <div><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Soubory</div>
+        <div><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 18h6"/></svg>Apky</div>
+        <div><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Diagnostika</div>
+      </div>
+    </div>
+    <div class="cap"><b>Domů · stav OK.</b> Jedno tlačítko. ETA z naměřené rychlosti posledního přenosu. Jediná akce navíc je „Vybrat ručně“ (→ Mřížka).</div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="status"><span>14:32</span><span>Wi‑Fi ▾ 🔋 81 %</span></div>
+      <div class="app">
+        <div class="top"><svg class="ico" viewBox="0 0 32 32"><use href="#ico-app"/></svg>Rincewinder</div>
+        <div class="card">
+          <h3>Tělo</h3>
+          <div class="big"><span class="dot warn"></span>Tělo nalezeno, Agent neběží</div>
+          <div class="sub">10.98.92.25 · ADB odpovídá · port 8808 mlčí</div>
+        </div>
+        <div class="hint"><b>Na těle:</b> MENU → Aplikace → <b>Rincewinder Agent</b>. Agent se po spuštění připojí sám.</div>
+        <div class="btn sec small">Zkusit spustit z telefonu (am start)</div>
+        <div class="card" style="opacity:.5">
+          <h3>Nové snímky</h3>
+          <div class="big">—</div>
+          <div class="sub">zjistím, až poběží Agent</div>
+        </div>
+        <div class="btn" style="opacity:.35">Stáhnout nové</div>
+      </div>
+      <div class="nav">
+        <div class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10H3z"/></svg>Domů</div>
+        <div><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Soubory</div>
+        <div><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 18h6"/></svg>Apky</div>
+        <div><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Diagnostika</div>
+      </div>
+    </div>
+    <div class="cap"><b>Domů · kontextová nápověda.</b> Stav podle portů: 5555 mlčí → „zapni ADB v Tweaku“; 5555 OK, 8808 mlčí → „spusť Agent z menu“. Tlačítko „am start“ zůstává, dokud F0b nerozhodne.</div>
+  </div>
+</div>
+
+<!-- ===== MŘÍŽKA + MAZÁNÍ ===== -->
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="status"><span>14:35</span><span>Wi‑Fi ▾ 🔋 80 %</span></div>
+      <div class="app" style="gap:10px">
+        <div class="top">Soubory na kartě <span class="sub" style="font-size:12px;margin-left:auto">620 · 15,3 GB</span></div>
+        <div class="chips"><span class="chip on">Nové 23</span><span class="chip">Stažené</span><span class="chip">Vše</span><span class="chip">⇅ čas</span></div>
+        <div class="legend">
+          <span><span class="bd dl"></span> na kartě</span>
+          <span><span class="bd pr">42</span> stahuje se</span>
+          <span><span class="bd st">✓</span> staženo</span>
+          <span><span class="bd ov">✓✓</span> ověřeno</span>
+          <span><span class="bd er">!</span> chyba</span>
+        </div>
+        <div class="grid">
+          <div class="th a sel"><div class="chk">✓</div><div class="n">NCK0612 · 14:01</div></div>
+          <div class="th b sel"><div class="chk">✓</div><div class="n">NCK0613 · 14:01</div></div>
+          <div class="th c sel"><div class="chk">✓</div><div class="n">NCK0614 · 14:02</div></div>
+          <div class="th a"><div class="n">NCK0615 · 14:05</div></div>
+          <div class="th b sel"><div class="chk">✓</div><div class="n">NCK0616 · 14:05</div></div>
+          <div class="th c"><div class="n">NCK0617 · 14:06</div></div>
+          <div class="th b"><div class="bd pr">42</div><div class="n">NCK0618 · 14:09</div></div>
+          <div class="th a"><div class="bd st">✓</div><div class="n">NCK0619 · 14:09</div></div>
+          <div class="th c"><div class="bd ov">✓✓</div><div class="n">NCK0620 · 14:10</div></div>
+          <div class="th a"><div class="bd er">!</div><div class="n">NCK0621 · 14:11</div></div>
+          <div class="th b dim"><div class="bd ov">✓✓</div><div class="n">NCK0622 · 14:12</div></div>
+          <div class="th c dim"><div class="bd ov">✓✓</div><div class="n">NCK0623 · 14:12</div></div>
+        </div>
+        <div class="sub" style="text-align:center">Tahem přes náhledy vybereš víc. Klepnutí = velký náhled.</div>
+        <div class="btn" style="margin-top:auto">Stáhnout vybrané (4 · 190 MB)</div>
+      </div>
+      <div class="nav">
+        <div><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10H3z"/></svg>Domů</div>
+        <div class="on"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Soubory</div>
+        <div><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 18h6"/></svg>Apky</div>
+        <div><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Diagnostika</div>
+      </div>
+    </div>
+    <div class="cap"><b>Mřížka náhledů</b> (vložené JPEG z ARW). Rozhodnutí 2: stavy <i>na kartě → stahuje se → staženo → ověřeno → smazáno z karty</i> (+ chyba). Smazané z karty se v mřížce nezobrazují, jen ve filtru „Stažené“ jako ztlumené.</div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="status"><span>14:40</span><span>Wi‑Fi ▾ 🔋 79 %</span></div>
+      <div class="app" style="gap:10px">
+        <div class="top">Soubory na kartě</div>
+        <div class="chips"><span class="chip">Nové</span><span class="chip on">Stažené 41</span><span class="chip">Vše</span></div>
+        <div class="grid">
+          <div class="th a sel"><div class="chk">✓</div><div class="bd ov">✓✓</div></div>
+          <div class="th b sel"><div class="chk">✓</div><div class="bd ov">✓✓</div></div>
+          <div class="th c sel"><div class="chk">✓</div><div class="bd ov">✓✓</div></div>
+          <div class="th a"><div class="bd st">✓</div></div>
+          <div class="th b sel"><div class="chk">✓</div><div class="bd ov">✓✓</div></div>
+          <div class="th c sel"><div class="chk">✓</div><div class="bd ov">✓✓</div></div>
+        </div>
+        <div class="btn sec" style="margin-top:auto">Smazat z karty (5 ověřených)</div>
+      </div>
+      <div class="dialog"><div class="box">
+        <h4>Smazat z karty 5 souborů?</h4>
+        <div class="sub">240 MB · všech 5 je staženo a ověřeno podle MD5 v<br><b style="color:var(--fg)">Pictures/Rincewinder/2026-10-31</b></div>
+        <div class="sub" style="margin-top:8px">Soubor NCK0615 (jen staženo, neověřeno) vynechán.</div>
+        <div class="hold"><i></i><span>Podrž 1,5 s pro smazání</span></div>
+        <div class="btn sec small" style="margin-top:10px">Zrušit</div>
+      </div></div>
+      <div class="nav">
+        <div><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10H3z"/></svg>Domů</div>
+        <div class="on"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Soubory</div>
+        <div><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 18h6"/></svg>Apky</div>
+        <div><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Diagnostika</div>
+      </div>
+    </div>
+    <div class="cap"><b>Mazání z karty.</b> Jen ověřené; dialog říká počet, velikost a kam byly uloženy; potvrzení dlouhým podržením. Žádné „smazat vše“.</div>
+  </div>
+</div>
+
+<!-- ===== NOTIFIKACE + APKY ===== -->
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="status"><span>14:36</span><span>Wi‑Fi ▾ 🔋 80 %</span></div>
+      <div class="lock">
+        <div class="clock">14:36</div>
+        <div class="sub">pátek 31. října</div>
+        <div class="notif">
+          <div class="h"><svg class="ico" viewBox="0 0 32 32"><use href="#ico-app"/></svg>Rincewinder · přenos</div>
+          <div><b>9 z 23</b> · NCK0620.ARW · 2,3 MB/s · zbývá ~5 min</div>
+          <div class="bar" style="margin-top:8px"><i style="width:39%"></i></div>
+          <div class="acts"><span>Pozastavit</span><span>Zrušit</span></div>
+        </div>
+        <div class="notif" style="opacity:.75">
+          <div class="h"><svg class="ico" viewBox="0 0 32 32"><use href="#ico-app"/></svg>Rincewinder · před 2 min</div>
+          <div>Tělo spí: zmáčkni spoušť napůl. Fronta čeká, pokračuji po připojení.</div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Přenos v notifikaci</b> (FGS connectedDevice). Telefon v kapse. Výpadek = tichá notifikace, žádný dialog, auto‑pokračování. Po dokončení haptika + „23 staženo, vše ověřeno“.</div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="status"><span>14:50</span><span>Wi‑Fi ▾ 🔋 78 %</span></div>
+      <div class="app">
+        <div class="top">Apky na těle</div>
+        <div class="card" style="padding:4px 14px">
+          <div class="li"><div class="t">Rincewinder Agent<small>0.3 · běží</small></div><span class="pill up">↑ 0.4</span></div>
+          <div class="li"><div class="t">TrapFocus<small>1.12‑diag (vc 15) · neběží</small></div><span class="pill">aktuální</span></div>
+          <div class="li"><div class="t">OpenMemories Tweak<small>0.11</small></div><span class="pill">aktuální</span></div>
+          <div class="li"><div class="t">Timelapse<small>jonasjuffinger</small></div><span class="pill">—</span></div>
+          <div class="li"><div class="t">focusbracket<small>obsidium</small></div><span class="pill">—</span></div>
+        </div>
+        <div class="card">
+          <h3>Rincewinder Agent 0.4</h3>
+          <div class="sub">GitHub Releases · 212 kB · podpis sedí s verzí v těle ✓</div>
+          <div class="btn small" style="margin-top:10px">Stáhnout a nainstalovat</div>
+        </div>
+        <div class="card">
+          <h3>Instalovat vlastní APK</h3>
+          <div class="sub">Z úložiště Pixelu · před instalací kontrola podpisu</div>
+          <div class="pill bad" style="display:inline-block;margin-top:6px">⚠ jiný podpis = nejdřív odinstalovat</div>
+        </div>
+      </div>
+      <div class="nav">
+        <div><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10H3z"/></svg>Domů</div>
+        <div><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Soubory</div>
+        <div class="on"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 18h6"/></svg>Apky</div>
+        <div><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Diagnostika</div>
+      </div>
+    </div>
+    <div class="cap"><b>Apky na těle</b> (P2). Seznam z `pm list`, odznak „aktualizace“ z GitHub Releases, jedno klepnutí = stáhnout + ověřit podpis + `pm install -r`. Spuštění (`am start`) jen když neběží jiná kamerová apka.</div>
+  </div>
+</div>
+
+<!-- ===== DIAGNOSTIKA + ONBOARDING ===== -->
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="status"><span>14:52</span><span>Wi‑Fi ▾ 🔋 78 %</span></div>
+      <div class="app">
+        <div class="top">Diagnostika</div>
+        <div class="cards2">
+          <div class="card"><h3>Baterie těla</h3><div class="big">64 %</div><div class="sub">7,9 V · 31 °C</div></div>
+          <div class="card"><h3>Karta</h3><div class="big">41 GB</div><div class="sub">volných z 64</div></div>
+          <div class="card"><h3>Wi‑Fi</h3><div class="big">−48 dBm</div><div class="sub">ch 11 · 58 Mb/s</div></div>
+          <div class="card"><h3>Tweak / Agent</h3><div class="big">0.11 / 0.3</div><div class="sub">ADB ✓ · HTTP ✓</div></div>
+        </div>
+        <div class="card">
+          <h3>Rychlost</h3>
+          <div class="sub">poslední přenos 2,3 MB/s · test 10 s: <span style="color:var(--acc)">Změřit</span></div>
+        </div>
+        <div class="card" style="padding:4px 14px">
+          <div class="li"><div class="t">Stáhnout TRAPFOC.LOG<small>z kořene karty</small></div><span class="pill">↓</span></div>
+          <div class="li"><div class="t">Stáhnout SHARP.CSV</div><span class="pill">↓</span></div>
+          <div class="li"><div class="t">Stáhnout RINCEAGT.LOG</div><span class="pill">↓</span></div>
+        </div>
+        <div class="btn sec small" style="margin-top:auto">Logcat (filtr: RinceAgent · TrapFocus · vše)</div>
+      </div>
+      <div class="nav">
+        <div><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10H3z"/></svg>Domů</div>
+        <div><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Soubory</div>
+        <div><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 18h6"/></svg>Apky</div>
+        <div class="on"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Diagnostika</div>
+      </div>
+    </div>
+    <div class="cap"><b>Diagnostika jako karty.</b> Logcat až pod tlačítkem. Logy z karty jdou přes Agent (HTTP), ne přes adb.</div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="status"><span>9:00</span><span>Wi‑Fi ▾ 🔋 100 %</span></div>
+      <div class="app">
+        <div class="ob">
+          <div class="ill"><svg width="96" height="96" viewBox="0 0 32 32"><use href="#ico-app"/></svg></div>
+          <h4>Kam ukládat RAWy</h4>
+          <p>Každý přenos dostane podsložku s datem.</p>
+          <div class="field">Pictures/Rincewinder<small>klepnutím změníš · jediné textové pole v appce</small></div>
+        </div>
+        <div class="dots"><i class="on"></i><i></i><i></i></div>
+        <div class="btn sec">Pokračovat</div>
+      </div>
+    </div>
+    <div class="cap"><b>Onboarding 1/3.</b> Složka přes SAF, předvyplněná. Žádné psaní, pokud nechceš.</div>
+  </div>
+</div>
+
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="status"><span>9:00</span><span>Wi‑Fi ▾ 🔋 100 %</span></div>
+      <div class="app">
+        <div class="ob">
+          <div class="ill"><svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.5 6.5c3 2 10 2 13 0M5.5 17.5c3-2 10-2 13 0"/></svg></div>
+          <h4>Tělo je v místní síti</h4>
+          <p>Android se zeptá na přístup k <b>místní síti</b> a na <b>notifikace</b>. Bez sítě appka tělo nikdy nenajde; bez notifikací neuvidíš postup přenosu.</p>
+        </div>
+        <div class="dots"><i></i><i class="on"></i><i></i></div>
+        <div class="btn sec">Povolit obojí</div>
+      </div>
+    </div>
+    <div class="cap"><b>Onboarding 2/3.</b> `ACCESS_LOCAL_NETWORK` + `POST_NOTIFICATIONS` v kontextu. Když odmítne: Domů ukáže kartu „bez přístupu k síti tělo nenajdu“ s odkazem do nastavení.</div>
+  </div>
+
+  <div>
+    <div class="phone">
+      <div class="status"><span>9:01</span><span>Wi‑Fi ▾ 🔋 100 %</span></div>
+      <div class="app">
+        <div class="ob">
+          <div class="ill" style="background:#000;border:2px dashed var(--line);width:220px;height:220px;border-radius:16px">
+            <svg width="120" height="120" viewBox="0 0 21 21"><use href="#qr"/></svg>
+          </div>
+          <h4>Naskenuj QR z displeje těla</h4>
+          <p>Na těle: MENU → Aplikace → <b>Rincewinder Agent</b>. Na displeji se ukáže QR.</p>
+          <p style="color:var(--acc)">Zadat IP ručně · Přeskočit (najdu tělo skenem sítě)</p>
+        </div>
+        <div class="dots"><i></i><i></i><i class="on"></i></div>
+      </div>
+    </div>
+    <div class="cap"><b>Onboarding 3/3.</b> QR = `http://10.98.92.25:8808/?m=…&v=…` (QR verze 4) → appka si uloží MAC z /status a profil sítě. Ruční IP a sken podsítě jsou záložní cesty.</div>
+  </div>
+</div>
+
+<!-- ===== AGENT NA TĚLE ===== -->
+<div class="row">
+  <div>
+    <div class="cam">
+      <div class="qr"><svg width="190" height="190" viewBox="0 0 21 21"><use href="#qr"/></svg></div>
+      <div class="txt">
+        <div class="h">Rincewinder Agent</div>
+        <div class="g">běží · 0.3</div>
+        <div class="ip">10.98.92.25<br>:8808</div>
+        <div class="g">Wi‑Fi −48 dBm<br>baterie 64 % · karta 41 GB</div>
+        <div class="g" style="margin-top:auto;font-size:12px">Pixel: 0 spojení · MENU = konec</div>
+      </div>
+      <div class="foot"><span>NCK0620.ARW</span><div class="bar"><i style="width:39%"></i></div><span>2,3 MB/s</span></div>
+    </div>
+    <div class="cap" style="width:480px"><b>Agent na těle — 3" displej (4:3, 640×480), bez dotyku.</b> Po spuštění z menu hned běží server a ukáže se tohle. Žádné menu. QR vlevo má stranu ~1/2 výšky displeje (Odhad: čitelné z 20–30 cm). Dolní řádek jen během přenosu.</div>
+  </div>
+
+  <div>
+    <div class="cam" style="background:#000">
+      <div class="txt" style="flex:1;align-items:center;justify-content:center;text-align:center">
+        <div class="h" style="font-size:24px">Rincewinder Agent</div>
+        <div class="ip" style="font-size:38px">10.98.92.25</div>
+        <div class="ip" style="font-size:30px">port 8808</div>
+        <div class="g">Wi‑Fi −48 dBm · baterie 64 %</div>
+        <div class="g" style="font-size:12px">MENU = konec</div>
+      </div>
+    </div>
+    <div class="cap" style="width:480px"><b>Záložní varianta bez QR</b> (pokud QR generátor nestihne F0b): velká IP, Pixel ji vezme skenem podsítě. Rozhodnutí 6.</div>
+  </div>
+</div>
+
+<!-- ===== IKONA ===== -->
+<div class="row">
+  <div>
+    <div class="icon-grid">
+      <div class="ib" style="background:var(--acc)"><svg width="72" height="72" viewBox="0 0 32 32"><use href="#ico-hat"/></svg></div>
+      <div class="ib" style="background:#1a1d22"><svg width="72" height="72" viewBox="0 0 32 32"><use href="#ico-app"/></svg></div>
+      <div class="ib" style="background:#1a1d22"><svg width="72" height="72" viewBox="0 0 32 32"><use href="#ico-chest"/></svg></div>
+    </div>
+    <div class="cap" style="width:auto"><b>Rozhodnutí 4 · ikona.</b> Vlevo: mágova čepice s hvězdami (Rincewind) na akcentu. Uprostřed: cívka filmu se šipkou „ven“ (winder/rewinder), neutrální. Vpravo: Zavazadlo (Truhla), která nosí věci za Rincewindem = sync. Barvy ovlivňuje přepínač nahoře; appka na Pixelu použije Material 3 dynamické barvy, tohle je fallback.</div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- aplikace: cívka + šipka -->
+    <symbol id="ico-app" viewBox="0 0 32 32">
+      <circle cx="14" cy="16" r="10" fill="none" stroke="var(--acc)" stroke-width="2.5"/>
+      <circle cx="14" cy="16" r="3" fill="var(--acc)"/>
+      <circle cx="14" cy="8.5" r="1.6" fill="var(--acc)"/><circle cx="14" cy="23.5" r="1.6" fill="var(--acc)"/>
+      <circle cx="6.5" cy="16" r="1.6" fill="var(--acc)"/><circle cx="21.5" cy="16" r="1.6" fill="var(--acc)"/>
+      <path d="M22 16h8m-3-3l3 3-3 3" fill="none" stroke="var(--fg)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <!-- čepice mága -->
+    <symbol id="ico-hat" viewBox="0 0 32 32">
+      <path d="M16 3 L23 22 H9 Z" fill="#2a1a40"/>
+      <path d="M5 23 Q16 19 27 23 L27 26 Q16 22 5 26 Z" fill="#2a1a40"/>
+      <path d="M16 3 Q19 10 23 22 L9 22 Q12 10 16 3Z" fill="none" stroke="#1a0e05" stroke-width="1"/>
+      <g fill="#ffe28a"><polygon points="16,9 16.8,11 19,11 17.2,12.3 17.9,14.5 16,13.2 14.1,14.5 14.8,12.3 13,11 15.2,11"/><circle cx="12" cy="18" r="1"/><circle cx="20" cy="17" r="1"/></g>
+      <text x="16" y="21.4" text-anchor="middle" font-size="3.2" font-family="serif" fill="#ffe28a" font-weight="700">WIZZARD</text>
+    </symbol>
+    <!-- Zavazadlo -->
+    <symbol id="ico-chest" viewBox="0 0 32 32">
+      <rect x="5" y="11" width="22" height="13" rx="2" fill="#8a5a2b"/>
+      <path d="M5 13 Q16 6 27 13" fill="#a8703a"/>
+      <rect x="5" y="14" width="22" height="1.5" fill="#5a3a1a"/>
+      <rect x="14.5" y="13" width="3" height="4" rx=".6" fill="#ffe28a"/>
+      <g fill="#8a5a2b"><rect x="7" y="24" width="2" height="4"/><rect x="11" y="24" width="2" height="4"/><rect x="15" y="24" width="2" height="4"/><rect x="19" y="24" width="2" height="4"/><rect x="23" y="24" width="2" height="4"/></g>
+    </symbol>
+    <!-- placeholder QR 21×21 (ne platný kód); skutečný kód bude verze 4, 33×33 -->
+    <symbol id="qr" viewBox="0 0 21 21" shape-rendering="crispEdges">
+      <rect width="21" height="21" fill="#fff"/>
+      <g fill="#000">
+        <path d="M0 0h7v7H0zM1 1v5h5V1z" fill-rule="evenodd"/><rect x="2" y="2" width="3" height="3"/>
+        <path d="M14 0h7v7h-7zM15 1v5h5V1z" fill-rule="evenodd"/><rect x="16" y="2" width="3" height="3"/>
+        <path d="M0 14h7v7H0zM1 15v5h5v-5z" fill-rule="evenodd"/><rect x="2" y="16" width="3" height="3"/>
+        <path d="M8 0h1v1H8zM10 0h1v1h-1zM8 2h1v1H8zM10 2h1v1h-1zM12 2h1v1h-1zM9 3h1v1H9zM11 3h1v1h-1zM8 4h1v1H8zM12 4h1v1h-1zM9 5h1v1H9zM10 6h1v1h-1zM12 6h1v1h-1zM0 8h1v1H0zM2 8h1v1H2zM4 8h1v1H4zM6 8h1v1H6zM8 8h1v1H8zM11 8h1v1h-1zM13 8h1v1h-1zM15 8h1v1h-1zM18 8h1v1h-1zM20 8h1v1h-1zM1 9h1v1H1zM3 9h1v1H3zM7 9h1v1H7zM9 9h1v1H9zM10 9h1v1h-1zM14 9h1v1h-1zM17 9h1v1h-1zM19 9h1v1h-1zM0 10h1v1H0zM4 10h1v1H4zM5 10h1v1H5zM8 10h1v1H8zM12 10h1v1h-1zM13 10h1v1h-1zM16 10h1v1h-1zM20 10h1v1h-1zM2 11h1v1H2zM6 11h1v1H6zM9 11h1v1H9zM11 11h1v1h-1zM15 11h1v1h-1zM18 11h1v1h-1zM1 12h1v1H1zM3 12h1v1H3zM5 12h1v1H5zM7 12h1v1H7zM10 12h1v1h-1zM13 12h1v1h-1zM14 12h1v1h-1zM17 12h1v1h-1zM19 12h1v1h-1zM20 12h1v1h-1zM8 13h1v1H8zM12 13h1v1h-1zM16 13h1v1h-1zM9 14h1v1H9zM11 14h1v1h-1zM13 14h1v1h-1zM15 14h1v1h-1zM18 14h1v1h-1zM20 14h1v1h-1zM8 15h1v1H8zM10 15h1v1h-1zM14 15h1v1h-1zM17 15h1v1h-1zM19 15h1v1h-1zM9 16h1v1H9zM12 16h1v1h-1zM13 16h1v1h-1zM16 16h1v1h-1zM20 16h1v1h-1zM8 17h1v1H8zM11 17h1v1h-1zM15 17h1v1h-1zM18 17h1v1h-1zM10 18h1v1h-1zM13 18h1v1h-1zM14 18h1v1h-1zM17 18h1v1h-1zM19 18h1v1h-1zM8 19h1v1H8zM12 19h1v1h-1zM16 19h1v1h-1zM20 19h1v1h-1zM9 20h1v1H9zM11 20h1v1h-1zM14 20h1v1h-1zM15 20h1v1h-1zM18 20h1v1h-1z"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<script>
+document.querySelectorAll('.ctrl button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const k=b.dataset.set,v=b.dataset.val;
+    document.body.dataset[k]=v;
+    document.body.classList.toggle('ia-b',document.body.dataset.ia==='b');
+    document.querySelectorAll('.ctrl button[data-set="'+k+'"]').forEach(x=>x.classList.toggle('on',x===b));
+  });
+});
+</script>
+</body>
+</html>

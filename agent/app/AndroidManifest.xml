@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.nicky.rincewinder.agent"
+    android:versionCode="2"
+    android:versionName="0.1.1-probe">
+
+    <!-- minSdkVersion=16: tělo A7 II běží Android 4.1.2 (zamčený fakt, skill sony-trap-focus).
+         targetSdkVersion=10 záměrně jako u TrapFocusu: tělo drží starý renderovací režim
+         (bez HW akcelerace od API 14), který je na Sony ověřený. -->
+    <uses-sdk
+        android:minSdkVersion="16"
+        android:targetSdkVersion="10" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <application
+        android:label="Rincewinder Agent"
+        android:allowBackup="false"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+
+        <activity
+            android:name=".MainActivity"
+            android:launchMode="singleTask"
+            android:label="Rincewinder Agent">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- exported: aby šlo spustit z adb shellu (am startservice), otázka #4 sondy -->
+        <service
+            android:name=".AgentService"
+            android:exported="true" />
+
+        <receiver android:name=".SuspendReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.server.SyncAndroidService.SUSPEND" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

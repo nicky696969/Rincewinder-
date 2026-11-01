@@ -1,0 +1,90 @@
+﻿F0b mÄ›Ĺ™enĂ­ 20261031_110557  agent http://10.98.92.25:8808
+--- #0 dosaĹľitelnost a latence /ping (10Ă—)
+odpovÄ›ÄŹ: ok 14
+latence ms: min 23  mediĂˇn 32  max 336
+--- #7 /status
+{"agentVersion":"0.1-probe","port":8808,"serviceRunning":true,"uptime":14,"activeClients":1,"cardPresent":true,"cardFree":489717760,"cardTotal":31255953408,"root":"/storage/sdcard0","transferActive":false,"lastMbps":0.0,"lastClient":"/10.98.92.139:63987","ip":"10.98.92.25","mac":"a0c9a0ce95ad","wifiDbm":-29,"wifiChannel":null,"wifiLinkMbps":72,"batteryPct":80,"batteryMv":4000,"batteryC":23.4,"tweakVersion":"com.github.ma1co.openmemories.tweak 0.11","fw":null,"model":"ScalarA","device":"dslr-diadem","sdk":16,"release":"4.1.2","wakelock":"partial"}
+--- /ls DCIM/100MSDCF
+souborĹŻ ARW: 628
+vybranĂ˝ soubor: DCIM/100MSDCF/NCK00002.ARW  49184768 B
+--- #6 vloĹľenĂ© JPEG (/thumbs, /thumb)
+offset;length;WxH;ifd
+38664;4776;160x120;IFD1
+139938;361441;1920x1080;IFD0
+
+/thumb?min=0: 361441 B za 217 ms (prvnĂ­ bajt 58 ms)  X-Thumb-Dim=1920x1080; X-Thumb-Ifd=IFD0; X-Find-Ms=23; Connection=close; Content-Length=361441; Content-Type=image/jpeg
+/thumb?min=100: 4776 B za 90 ms (prvnĂ­ bajt 49 ms)  X-Thumb-Dim=160x120; X-Thumb-Ifd=IFD1; X-Find-Ms=21; Connection=close; Content-Length=4776; Content-Type=image/jpeg
+nĂˇhledy uloĹľeny v C:\Users\Nicky\AppData\Local\Temp\rw_f0b_20261031_110557
+--- #3 propustnost: staĹľenĂ­ celĂ©ho ARW
+49184768 B za 17,7 s = 2,65 MB/s (prvnĂ­ bajt 26 ms)
+velikost sedĂ­ s /ls: True
+MD5 lokĂˇlnÄ›: 52008f825ca44ec9099219732de158d1
+--- /md5 na tÄ›le (mÄ›Ĺ™Ă­ i rychlost ÄŤtenĂ­ karty)
+MD5 z Agenta: 52008f825ca44ec9099219732de158d1  za 6,5 s = 7,23 MB/s ÄŤtenĂ­ karty
+MD5 shodnĂ©: True
+--- #5 reflexe Sony API (/probe)
+com.sony.scalar.sysutil.TimeUtil: třída OK
+  TimeUtil.getCurrentCalendar() static
+  TimeUtil.getCurrentTimeZone() static
+  TimeUtil.setCurrentTime(PlainCalendar,PlainTimeZone)
+TimeUtil.<init>(): OK
+TimeUtil.getCurrentCalendar() = com.sony.scalar.sysutil.PlainCalendar@5aa4f28
+TimeUtil.getCurrentTimeZone() = com.sony.scalar.sysutil.PlainTimeZone@5ac36e8
+TimeUtil.setCurrentTime: EXISTUJE (nevolám)
+com.sony.scalar.sysutil.didep.Settings: třída OK
+  Settings.getAutoPowerOffTime() static
+  Settings.getSupportedAutoPowerOffTimes() static
+  Settings.setAutoPowerOffTime(int) static
+Settings.getAutoPowerOffTime() = 300
+Settings.setAutoPowerOffTime: EXISTUJE (nevolám)
+com.sony.scalar.sysutil.ScalarProperties: třída OK
+ScalarProperties.getString(model.name) = ILCE-7M2
+ScalarProperties.getString(version.platform) = 2.10
+ScalarProperties.getString(version.firmware) = unknown
+ScalarProperties.getFirmwareVersion() = 4.01
+com.sony.scalar.sysutil.didep.Power: třída OK
+com.sony.scalar.sysutil.didep.Power.getInstance: EXISTUJE
+com.sony.scalar.hardware.CameraEx: třída OK
+  CameraEx.getLensInfo()
+  CameraEx.open(int,OpenOptions) static
+  CameraEx.release()
+  CameraEx.reopen(OpenOptions,OpenCallback)
+CameraEx.open/getLensInfo: nevolám (spusť /probe?lens=1 při vypnuté kameře)
+
+--- RINCEAGT.LOG (poslednĂ­ch 60 Ĺ™ĂˇdkĹŻ)
+2026-10-31 10:05:35.582 === start === dir=/storage/sdcard0 exists=true canWrite=true
+2026-10-31 10:05:35.828 AgentService.onCreate pid=1524
+2026-10-31 10:05:35.836 AgentService.onStartCommand wl=null startId=1
+2026-10-31 10:05:35.851 HTTP server start port=8808 root=/storage/sdcard0
+2026-10-31 10:05:35.860 WakeLock partial
+2026-10-31 10:06:09.862 file NCK00002.ARW 49184768 B 2,68 MB/s
+2026-10-31 10:06:16.843 md5 NCK00002.ARW 49184768 B 5700 ms
+2026-10-31 10:06:17.038 PROBE lens=false
+com.sony.scalar.sysutil.TimeUtil: třída OK
+  TimeUtil.getCurrentCalendar() static
+  TimeUtil.getCurrentTimeZone() static
+  TimeUtil.setCurrentTime(PlainCalendar,PlainTimeZone)
+TimeUtil.<init>(): OK
+TimeUtil.getCurrentCalendar() = com.sony.scalar.sysutil.PlainCalendar@5aa4f28
+TimeUtil.getCurrentTimeZone() = com.sony.scalar.sysutil.PlainTimeZone@5ac36e8
+TimeUtil.setCurrentTime: EXISTUJE (nevolám)
+com.sony.scalar.sysutil.didep.Settings: třída OK
+  Settings.getAutoPowerOffTime() static
+  Settings.getSupportedAutoPowerOffTimes() static
+  Settings.setAutoPowerOffTime(int) static
+Settings.getAutoPowerOffTime() = 300
+Settings.setAutoPowerOffTime: EXISTUJE (nevolám)
+com.sony.scalar.sysutil.ScalarProperties: třída OK
+ScalarProperties.getString(model.name) = ILCE-7M2
+ScalarProperties.getString(version.platform) = 2.10
+ScalarProperties.getString(version.firmware) = unknown
+ScalarProperties.getFirmwareVersion() = 4.01
+com.sony.scalar.sysutil.didep.Power: třída OK
+com.sony.scalar.sysutil.didep.Power.getInstance: EXISTUJE
+com.sony.scalar.hardware.CameraEx: třída OK
+  CameraEx.getLensInfo()
+  CameraEx.open(int,OpenOptions) static
+  CameraEx.release()
+  CameraEx.reopen(OpenOptions,OpenCallback)
+CameraEx.open/getLensInfo: nevolám (spusť /probe?lens=1 při vypnuté kameře)
+

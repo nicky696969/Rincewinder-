@@ -1,0 +1,7 @@
+# podpisové klíče a hesla NIKDY do gitu (záloha je na Nickym)
+.signing/
+# výstupy buildu
+build/
+dist/
+*.keystore
+keypass.txt
