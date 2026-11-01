@@ -22,3 +22,4 @@ rootProject.name = "rincewinder"
 // :dadb-fork — ADB klient s patchem pro Android 4.1, přibude v M3
 include(":core")
 include(":testing")
+include(":dadb-fork")
