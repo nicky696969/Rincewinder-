@@ -3,5 +3,10 @@
 # výstupy buildu
 build/
 dist/
+.gradle/
+.kotlin/
+*/build/
+local.properties
+.idea/
 *.keystore
 keypass.txt
