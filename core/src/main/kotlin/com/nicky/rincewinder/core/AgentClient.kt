@@ -39,37 +39,61 @@ interface AgentClient {
     @Throws(IOException::class) fun openFile(path: String, from: Long = 0): FileStream
     @Throws(IOException::class) fun md5(path: String): String
     @Throws(IOException::class) fun thumb(path: String, minLongSide: Int = 0): ByteArray
+    /** Vydá token pro smazání; null = soubor na kartě se liší (409). Vyžaduje klíč z QR. */
+    @Throws(IOException::class) fun rmToken(path: String, size: Long, mtime: Long): String?
+    /** Smaže soubor; vrací true = smazáno, false = 409 (token neplatný nebo soubor změněn). */
+    @Throws(IOException::class) fun rm(path: String, token: String): Boolean
 }
+
+/** Stavový kód mimo 2xx, který není síťová chyba (403, 404, 409…). */
+class AgentHttpException(val code: Int, message: String) : IOException("HTTP $code: $message")
 
 /** HTTP klient nad `java.net.HttpURLConnection` (funguje na JVM i na Androidu, bez závislostí). */
 class HttpAgentClient(
     host: String,
     port: Int = 8808,
+    private val key: String? = null,
     private val connectTimeoutMs: Int = 4_000,
     private val readTimeoutMs: Int = 30_000,
 ) : AgentClient {
     val base = "http://$host:$port"
 
-    private fun open(path: String, query: String = "", range: Long? = null): HttpURLConnection {
+    private fun open(path: String, query: String = "", range: Long? = null, post: Boolean = false): HttpURLConnection {
         val c = URL("$base$path$query").openConnection() as HttpURLConnection
         c.connectTimeout = connectTimeoutMs
         c.readTimeout = readTimeoutMs
         c.useCaches = false
+        if (post) { c.requestMethod = "POST"; c.doOutput = true; c.setFixedLengthStreamingMode(0) }
         if (range != null && range > 0) c.setRequestProperty("Range", "bytes=$range-")
         return c
     }
 
     private fun q(path: String) = "?path=" + URLEncoder.encode(path, "UTF-8")
+    private fun k() = if (key == null) "" else "&k=" + URLEncoder.encode(key, "UTF-8")
 
-    private fun text(path: String, query: String = ""): String {
-        val c = open(path, query)
+    private fun call(path: String, query: String = "", post: Boolean = false, allow: Set<Int> = emptySet()): Pair<Int, String> {
+        val c = open(path, query, post = post)
         try {
+            if (post) c.outputStream.close()
             val code = c.responseCode
-            if (code !in 200..299) throw IOException("HTTP $code pro $path")
-            return c.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+            val body = (if (code in 200..299) c.inputStream else c.errorStream)?.use { it.readBytes().toString(Charsets.UTF_8) } ?: ""
+            if (code !in 200..299 && code !in allow) throw AgentHttpException(code, body.trim().ifEmpty { path })
+            return code to body
         } finally {
             c.disconnect()
         }
+    }
+
+    private fun text(path: String, query: String = ""): String = call(path, query).second
+
+    override fun rmToken(path: String, size: Long, mtime: Long): String? {
+        val (code, body) = call("/rm-token", q(path) + "&size=$size&mtime=$mtime" + k(), allow = setOf(409))
+        return if (code == 409) null else body.trim()
+    }
+
+    override fun rm(path: String, token: String): Boolean {
+        val (code, _) = call("/rm", q(path) + "&token=" + URLEncoder.encode(token, "UTF-8") + k(), post = true, allow = setOf(409))
+        return code != 409
     }
 
     override fun ping() = text("/ping").trim()

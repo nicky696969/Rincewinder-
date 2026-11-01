@@ -15,6 +15,7 @@ import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -24,8 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Minimální HTTP/1.1 server (jen GET, Range, Connection: close) pro sondu F0b.
  * Čistá Java bez Androidu: na těle běží pod uid aplikace, takže vidí kartu.
- * Endpointy: /ping /status /ls /file /md5 /thumbs /thumb /probe /wakelock /stop.
- * Nic nemaže ani nezapisuje; cesty jsou omezené na kořen karty.
+ * Endpointy: /ping /status /ls /file /md5 /thumbs /thumb; s klíčem k: /rm-token /rm (POST) /probe /wakelock /stop.
+ * Maže jen soubor v DCIM s platným tokenem a nezměněnou velikostí+mtime; jinak jen čte. Cesty jsou omezené na kořen karty.
  */
 public final class AgentHttpServer {
 
@@ -41,11 +42,27 @@ public final class AgentHttpServer {
         void stop();
     }
 
+    /** Jednorázový token pro smazání: vázaný na cestu, velikost a mtime (ZADANI_F1 §4). */
+    private static final class Token {
+        final String path; final long size; final long mtime; final long expiresAtMs;
+        Token(String p, long s, long m, long e) { path = p; size = s; mtime = m; expiresAtMs = e; }
+    }
+
+    private static final long TOKEN_TTL_MS = 60_000;
+    private static final int MD5_CACHE_MAX = 2000;
+
     private final int port;
     private final File root;
     private final Sink log;
     private final Hooks hooks;
     private final String version;
+    /** Sdílený klíč z QR (`&k=`); null = mazání a ladicí endpointy vypnuté. */
+    private final String secret;
+    private final Map<String, Token> tokens = new HashMap<String, Token>();
+    private final LinkedHashMap<String, String> md5Cache = new LinkedHashMap<String, String>(64, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, String> e) { return size() > MD5_CACHE_MAX; }
+    };
+    private final java.security.SecureRandom rnd = new java.security.SecureRandom();
     private final Transfer transfer = new Transfer();
     private final AtomicInteger activeClients = new AtomicInteger();
     private final long startNano = System.nanoTime(); // monotónně: hodiny těla po startu skáčou (1970 → 2026)
@@ -55,12 +72,13 @@ public final class AgentHttpServer {
     private volatile long lastRequestMs;
     private volatile String lastClient = "";
 
-    public AgentHttpServer(int port, File root, String version, Sink log, Hooks hooks) {
+    public AgentHttpServer(int port, File root, String version, Sink log, Hooks hooks, String secret) {
         this.port = port;
         this.root = root;
         this.version = version;
         this.log = log;
         this.hooks = hooks;
+        this.secret = (secret == null || secret.length() == 0) ? null : secret;
     }
 
     public Transfer transfer() {
@@ -166,9 +184,15 @@ public final class AgentHttpServer {
             text(out, 400, "bad request\n");
             return;
         }
-        if (!parts[0].equals("GET") && !parts[0].equals("HEAD")) {
-            text(out, 405, "jen GET\n");
+        String method = parts[0];
+        if (!method.equals("GET") && !method.equals("HEAD") && !method.equals("POST")) {
+            text(out, 405, "jen GET/POST\n");
             return;
+        }
+        if (method.equals("POST")) {
+            long cl = 0;
+            try { cl = Long.parseLong(headers.get("content-length")); } catch (Exception ignored) { }
+            while (cl > 0) { long skipped = in.skip(cl); if (skipped <= 0) break; cl -= skipped; }
         }
         String target = parts[1];
         String path = target;
@@ -186,9 +210,9 @@ public final class AgentHttpServer {
                 q.put(dec(k), dec(v));
             }
         }
-        boolean head = parts[0].equals("HEAD");
+        boolean head = method.equals("HEAD");
         try {
-            route(path, q, headers, out, head);
+            route(method, path, q, headers, out, head);
         } catch (IOException e) {
             throw e;
         } catch (Throwable t) {
@@ -197,9 +221,18 @@ public final class AgentHttpServer {
         }
     }
 
-    private void route(String path, Map<String, String> q, Map<String, String> headers, OutputStream out,
-                       boolean head) throws IOException {
-        if (path.equals("/ping")) {
+    private void route(String method, String path, Map<String, String> q, Map<String, String> headers,
+                       OutputStream out, boolean head) throws IOException {
+        if (method.equals("POST") && !path.equals("/rm")) {
+            text(out, 405, "POST jen na /rm\n");
+            return;
+        }
+        if (path.equals("/rm-token")) {
+            if (authorized(q, out)) rmToken(out, q);
+        } else if (path.equals("/rm")) {
+            if (!method.equals("POST")) text(out, 405, "jen POST\n");
+            else if (authorized(q, out)) rm(out, q);
+        } else if (path.equals("/ping")) {
             text(out, 200, "ok " + (System.nanoTime() - startNano) / 1000000000L + "\n");
         } else if (path.equals("/status")) {
             text(out, 200, "application/json; charset=utf-8", status());
@@ -214,12 +247,14 @@ public final class AgentHttpServer {
         } else if (path.equals("/thumb")) {
             thumb(out, q.get("path"), q.get("min"), head);
         } else if (path.equals("/probe")) {
-            text(out, 200, hooks.probe("1".equals(q.get("lens"))));
+            if (authorized(q, out)) text(out, 200, hooks.probe("1".equals(q.get("lens"))));
         } else if (path.equals("/wakelock")) {
-            text(out, 200, hooks.wakelock(q.get("mode")) + "\n");
+            if (authorized(q, out)) text(out, 200, hooks.wakelock(q.get("mode")) + "\n");
         } else if (path.equals("/stop")) {
-            text(out, 200, "stopping\n");
-            hooks.stop();
+            if (authorized(q, out)) {
+                text(out, 200, "stopping\n");
+                hooks.stop();
+            }
         } else {
             text(out, 404, "neznámá cesta: " + path + "\n");
         }
@@ -244,6 +279,12 @@ public final class AgentHttpServer {
             j.nul("cardTotal");
         }
         j.str("root", root.getPath());
+        long now = System.currentTimeMillis();
+        j.num("deviceTimeMs", now);
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.setTimeInMillis(now);
+        j.bool("clockSynced", cal.get(java.util.Calendar.YEAR) >= 2024); // po startu má tělo rok 1970
+        j.bool("secured", secret != null);
         j.bool("transferActive", transfer.isActive());
         j.dbl("lastMbps", Math.round(transfer.mbps() * 100) / 100.0);
         j.str("lastClient", lastClient);
@@ -332,6 +373,16 @@ public final class AgentHttpServer {
             text(out, 404, "není soubor\n");
             return;
         }
+        String cacheKey = f.getPath() + ":" + f.length() + ":" + f.lastModified();
+        String cached;
+        synchronized (md5Cache) { cached = md5Cache.get(cacheKey); }
+        if (cached != null) {
+            byte[] body = (cached + "\n").getBytes("UTF-8");
+            header(out, 200, "text/plain; charset=utf-8", body.length, "X-Elapsed-Ms: 0\r\nX-Bytes: " + f.length() + "\r\nX-Cache: hit\r\n");
+            out.write(body);
+            out.flush();
+            return;
+        }
         long t0 = System.currentTimeMillis();
         transfer.begin("md5", f.getName(), f.length());
         String hex;
@@ -361,6 +412,7 @@ public final class AgentHttpServer {
             transfer.end();
         }
         long ms = System.currentTimeMillis() - t0;
+        synchronized (md5Cache) { md5Cache.put(cacheKey, hex); }
         log.log("md5 " + f.getName() + " " + f.length() + " B " + ms + " ms");
         byte[] body = (hex + "\n").getBytes("UTF-8");
         header(out, 200, "text/plain; charset=utf-8", body.length,
@@ -410,6 +462,91 @@ public final class AgentHttpServer {
             return;
         }
         stream(out, f, it.offset, it.length, "thumb");
+    }
+
+    // ---- mazání (jen s klíčem, jen DCIM, jen soubor, jen s platným tokenem a nezměněným souborem) ----
+
+    private boolean authorized(Map<String, String> q, OutputStream out) throws IOException {
+        if (secret == null) {
+            text(out, 403, "endpoint vypnutý (Agent nemá klíč)\n");
+            return false;
+        }
+        String k = q.get("k");
+        if (k == null || !constantEquals(k, secret)) {
+            text(out, 403, "chybí nebo nesedí klíč k\n");
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean constantEquals(String a, String b) {
+        if (a.length() != b.length()) return false;
+        int r = 0;
+        for (int i = 0; i < a.length(); i++) r |= a.charAt(i) ^ b.charAt(i);
+        return r == 0;
+    }
+
+    private File dcimFile(String p, OutputStream out) throws IOException {
+        File f = resolve(p);
+        if (f == null) { text(out, 403, "mimo kořen\n"); return null; }
+        String dcim = new File(root, "DCIM").getCanonicalPath() + File.separator;
+        if (!f.getCanonicalPath().startsWith(dcim)) { text(out, 403, "mazat jde jen v DCIM\n"); return null; }
+        if (!f.isFile()) { text(out, 404, "není soubor\n"); return null; }
+        return f;
+    }
+
+    private void rmToken(OutputStream out, Map<String, String> q) throws IOException {
+        String p = q.get("path");
+        File f = dcimFile(p, out);
+        if (f == null) return;
+        long size, mtime;
+        try {
+            size = Long.parseLong(q.get("size"));
+            mtime = Long.parseLong(q.get("mtime"));
+        } catch (Exception e) {
+            text(out, 400, "chybí size/mtime\n");
+            return;
+        }
+        if (f.length() != size || f.lastModified() != mtime) {
+            text(out, 409, "soubor na kartě se liší (size=" + f.length() + " mtime=" + f.lastModified() + ")\n");
+            return;
+        }
+        byte[] b = new byte[12];
+        rnd.nextBytes(b);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < b.length; i++) sb.append(String.format("%02x", b[i] & 0xFF));
+        String tok = sb.toString();
+        long now = System.currentTimeMillis();
+        synchronized (tokens) {
+            java.util.Iterator<Map.Entry<String, Token>> it = tokens.entrySet().iterator();
+            while (it.hasNext()) if (it.next().getValue().expiresAtMs < now) it.remove();
+            tokens.put(tok, new Token(f.getCanonicalPath(), size, mtime, now + TOKEN_TTL_MS));
+        }
+        text(out, 200, tok + "\n");
+    }
+
+    private void rm(OutputStream out, Map<String, String> q) throws IOException {
+        String p = q.get("path");
+        String tok = q.get("token");
+        File f = dcimFile(p, out);
+        if (f == null) return;
+        Token t;
+        String canon = f.getCanonicalPath();
+        synchronized (tokens) {
+            t = tok == null ? null : tokens.get(tok);
+            if (t != null && t.path.equals(canon)) tokens.remove(tok); // token se spotřebuje jen pro svůj soubor
+        }
+        if (t == null || !t.path.equals(canon) || t.expiresAtMs < System.currentTimeMillis()) {
+            text(out, 409, "token neplatný, vypršel nebo patří jinému souboru\n");
+            return;
+        }
+        if (f.length() != t.size || f.lastModified() != t.mtime) {
+            text(out, 409, "soubor se od vydání tokenu změnil, nemažu\n");
+            return;
+        }
+        boolean ok = f.delete();
+        log.log("RM " + f.getName() + " " + t.size + " B " + (ok ? "OK" : "FAIL"));
+        if (ok) text(out, 200, "deleted\n"); else text(out, 500, "smazání selhalo\n");
     }
 
     // ---- pomocné ----

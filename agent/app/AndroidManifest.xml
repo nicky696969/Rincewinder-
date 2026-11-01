@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.nicky.rincewinder.agent"
-    android:versionCode="2"
-    android:versionName="0.1.1-probe">
+    android:versionCode="3"
+    android:versionName="0.2.0">
 
     <!-- minSdkVersion=16: tělo A7 II běží Android 4.1.2 (zamčený fakt, skill sony-trap-focus).
          targetSdkVersion=10 záměrně jako u TrapFocusu: tělo drží starý renderovací režim

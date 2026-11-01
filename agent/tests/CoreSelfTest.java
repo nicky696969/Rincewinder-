@@ -220,7 +220,7 @@ public class CoreSelfTest {
             public void log(String l) {
                 System.out.println("      [log] " + l);
             }
-        }, new Hk());
+        }, new Hk(), "test");
         s.start();
         return s;
     }

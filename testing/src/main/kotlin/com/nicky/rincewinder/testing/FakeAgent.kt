@@ -9,14 +9,14 @@ import java.net.Socket
 import java.util.concurrent.atomic.AtomicLong
 
 /** Skutečné jádro Agenta (agent/core) nad složkou na PC. Co Agent umí na těle, umí i tady, jen bez Sony API. */
-class FakeAgent(val root: File, port: Int = 0) : AutoCloseable {
+class FakeAgent(val root: File, port: Int = 0, val secret: String? = "testkey1") : AutoCloseable {
     val log = ArrayList<String>()
     private val server = AgentHttpServer(port, root, "fake-1", Sink { synchronized(log) { log += it } }, object : AgentHttpServer.Hooks {
         override fun fillStatus(j: Json) { j.str("ip", "127.0.0.1").str("mac", "000000000000").num("batteryPct", 77).num("wifiDbm", -40) }
         override fun probe(lens: Boolean) = "fake\n"
         override fun wakelock(mode: String?) = "fake"
         override fun stop() {}
-    })
+    }, secret)
 
     init { server.start() }
     val port: Int get() = server.port()

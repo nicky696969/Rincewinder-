@@ -19,6 +19,7 @@ public class StatusView extends View {
         public String mac;
         public int port = AgentService.PORT;
         public String version = AgentService.VERSION;
+        public String secret;
         public Integer rssi;
         public Integer battery;
         public long cardFree = -1;
@@ -46,7 +47,7 @@ public class StatusView extends View {
 
     public void setState(State s) {
         st = s;
-        String text = s.ip == null ? "" : "http://" + s.ip + ":" + s.port + "/?m=" + (s.mac == null ? "" : s.mac) + "&v=" + s.version;
+        String text = s.ip == null ? "" : "http://" + s.ip + ":" + s.port + "/?m=" + (s.mac == null ? "" : s.mac) + "&v=" + AgentService.VERSION_CODE + (s.secret == null ? "" : "&k=" + s.secret);
         if (!text.equals(qrText)) {
             qrText = text;
             try {

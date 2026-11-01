@@ -29,7 +29,7 @@ public class LocalAgent {
             public void stop() {
                 System.exit(0);
             }
-        });
+        }, "test");
         s.start();
         System.out.println("LocalAgent běží na portu " + s.port() + ", kořen " + root + " (Ctrl+C nebo GET /stop ukončí)");
         Thread.sleep(Long.MAX_VALUE);

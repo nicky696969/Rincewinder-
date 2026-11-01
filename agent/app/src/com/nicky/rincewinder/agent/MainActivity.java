@@ -99,6 +99,7 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {
         }
         s.wake = AgentService.wakeMode();
+        s.secret = AgentService.secret();
         s.serverUp = AgentService.running();
         s.probeLine = probeLine;
         AgentHttpServer srv = AgentService.server();

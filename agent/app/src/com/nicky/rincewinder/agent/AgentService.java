@@ -14,7 +14,8 @@ import android.os.PowerManager;
 public class AgentService extends Service {
 
     public static final int PORT = 8808;
-    public static final String VERSION = "0.1.1-probe";
+    public static final String VERSION = "0.2.0";
+    public static final int VERSION_CODE = 3;
     private static final int NOTIF_ID = 8808;
 
     private static volatile AgentService instance;
@@ -31,6 +32,27 @@ public class AgentService extends Service {
 
     public static String wakeMode() {
         return wakeMode;
+    }
+
+    private static volatile String secret;
+
+    /** Sdílený klíč pro mazání (do QR jako &k=); vznikne jednou a drží se v SharedPreferences. */
+    public static String secret() {
+        return secret;
+    }
+
+    private static synchronized String loadOrCreateSecret(android.content.Context ctx) {
+        android.content.SharedPreferences sp = ctx.getSharedPreferences("agent", MODE_PRIVATE);
+        String k = sp.getString("k", null);
+        if (k == null || k.length() != 8) {
+            byte[] b = new byte[4];
+            new java.security.SecureRandom().nextBytes(b);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < b.length; i++) sb.append(String.format("%02x", b[i] & 0xFF));
+            k = sb.toString();
+            sp.edit().putString("k", k).commit();
+        }
+        return k;
     }
 
     public static boolean running() {
@@ -62,7 +84,8 @@ public class AgentService extends Service {
         synchronized (AgentService.class) {
             if (server == null) {
                 try {
-                    server = new AgentHttpServer(PORT, DeviceInfo.cardRoot(), VERSION, FileLog.get(), hooks());
+                    secret = loadOrCreateSecret(this);
+                    server = new AgentHttpServer(PORT, DeviceInfo.cardRoot(), VERSION, FileLog.get(), hooks(), secret);
                     server.start();
                     startedMs = System.currentTimeMillis();
                 } catch (Throwable t) {
