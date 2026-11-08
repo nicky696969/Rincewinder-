@@ -20,11 +20,12 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
-// Ruční čtecí kontrola proti skutečnému tělu: .\gradlew.bat :dadb-fork:liveBody -Phost=192.168.1.103
+// Ruční čtecí kontrola proti skutečnému tělu: .\gradlew.bat :dadb-fork:liveBody "-Phost=192.168.1.105"
+// (v PowerShellu uvozovky nutné, jinak se argument rozpadne na tečkách)
 tasks.register<JavaExec>("liveBody") {
     classpath = sourceSets["test"].runtimeClasspath
     mainClass.set("dadb.LiveBody")
-    args(providers.gradleProperty("host").orElse("192.168.1.103").get())
+    args(providers.gradleProperty("host").orElse("192.168.1.105").get())
 }
 
 tasks.test {

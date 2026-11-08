@@ -55,8 +55,9 @@ Klávesy, které aplikace dostává (`code`/`scan`): střed ovladače `23/232`, 
 
 | Změna | Vratnost |
 |---|---|
-| nainstalována aplikace `com.nicky.rincewinder.agent` (37 kB); 31. 10. po testu WakeLocku aktualizována na **0.1.1-probe** (oprava uptime, sonda čte podporované časy vypnutí), stejný podpis | `adb uninstall com.nicky.rincewinder.agent` |
-| spuštěna její služba přes `am startservice` | `GET http://10.98.92.25:8808/stop`, nebo restart těla |
+| nainstalována aplikace `com.nicky.rincewinder.agent` (37 kB); 31. 10. po testu WakeLocku aktualizována na **0.1.1-probe** (oprava uptime, sonda čte podporované časy vypnutí), stejný podpis; **8. 11. 2026 aktualizována na 0.2.0** (41 kB, podpis shodný `a0d0513c…`, `adb install -r` přes Wi‑Fi, tělo na 192.168.1.105) | `adb uninstall com.nicky.rincewinder.agent` |
+| spuštěna její služba přes `am startservice` (8. 11. znovu po instalaci 0.2.0; `/status`: `secured: true`, `clockSynced: true`, karta 128 GB / 106 GB volných, baterie 76 %) | `GET http://<ip>:8808/stop`, nebo restart těla |
+| 8. 11.: `:dadb-fork` živě proti tělu (jen čtení): features prázdné, `echo`/`getprop`/`false` (rc 1)/`pm list -3`/`grep` (rc 127) — fork funguje | nic |
 | na kartě vznikl `RINCEAGT.LOG` v kořeni | smaž ručně; do něj aplikace jen přidává řádky |
 
 Nic jiného: žádné nastavení těla, čas ani power-off se nezměnily, z karty se nic nemazalo.
