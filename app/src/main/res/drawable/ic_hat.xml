@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mágova čepice s hvězdami (Rincewind, „WIZZARD“) — UX_WIREFRAMES §11. Popředí adaptivní ikony, 108 dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- špička čepice ohnutá doprava -->
+    <path
+        android:fillColor="#1A1D22"
+        android:pathData="M54,22 C62,24 72,18 78,26 C70,26 64,30 60,38 L72,74 L36,74 Z" />
+    <!-- krempa -->
+    <path
+        android:fillColor="#1A1D22"
+        android:pathData="M26,74 L82,74 C84,74 84,80 82,80 L26,80 C24,80 24,74 26,74 Z" />
+    <!-- hvězdy -->
+    <path
+        android:fillColor="#FFD166"
+        android:pathData="M54,46 L56,51 L61,51 L57,54 L59,59 L54,56 L49,59 L51,54 L47,51 L52,51 Z" />
+    <path
+        android:fillColor="#FFD166"
+        android:pathData="M46,62 L47,64.5 L49.5,64.5 L47.5,66 L48.5,68.5 L46,67 L43.5,68.5 L44.5,66 L42.5,64.5 L45,64.5 Z" />
+    <path
+        android:fillColor="#FFD166"
+        android:pathData="M64,64 L65,66.5 L67.5,66.5 L65.5,68 L66.5,70.5 L64,69 L61.5,70.5 L62.5,68 L60.5,66.5 L63,66.5 Z" />
+</vector>

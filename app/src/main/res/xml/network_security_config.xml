@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Agent na těle mluví HTTP bez TLS v LAN (Android 4.1.2). Cleartext jen tady, žádný usesCleartextTraffic
+     (od targetSdk 38 ignorován). Zda <domain> umí IP rozsahy, dokumentace neříká → base-config. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

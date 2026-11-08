@@ -23,3 +23,4 @@ rootProject.name = "rincewinder"
 include(":core")
 include(":testing")
 include(":dadb-fork")
+include(":app")

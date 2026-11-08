@@ -10,6 +10,8 @@ local.properties
 .idea/
 *.keystore
 keypass.txt
+# APK Agenta přibalené do Pixel appky (kopíruje build z dist/)
+app/src/main/assets/agent.apk
 # crash logy JVM
 hs_err_pid*.log
 replay_pid*.log
