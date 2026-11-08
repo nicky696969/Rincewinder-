@@ -12,7 +12,6 @@ class DeleteFlow(
     private val client: AgentClient,
     private val store: FileStore,
     private val local: LocalFiles,
-    private val cardDir: String = "DCIM/100MSDCF",
 ) {
     /** Co by se smazalo: pro dialog (počet, velikost, vynechané s důvodem). Nic nemaže. */
     fun preview(selected: Collection<FileRecord>) = LocalCheck(store, local).deletable(selected)
@@ -23,7 +22,7 @@ class DeleteFlow(
         val deleted = ArrayList<FileKey>()
         val changed = ArrayList<FileKey>()
         for (rec in ok) {
-            val path = "$cardDir/${rec.key.name}"
+            val path = rec.cardPath
             val token = client.rmToken(path, rec.key.size, rec.key.mtime)
             if (token == null || !client.rm(path, token)) {
                 changed += rec.key

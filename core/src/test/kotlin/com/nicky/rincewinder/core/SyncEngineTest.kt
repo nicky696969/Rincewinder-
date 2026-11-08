@@ -44,7 +44,7 @@ class SyncEngineTest {
     }
 
     private fun client() = HttpAgentClient("127.0.0.1", proxy.port)
-    private fun engine(c: AgentClient = client(), parallel: Int = 2) = SyncEngine(c, store, local, dir, parallel, onEvent = { synchronized(events) { events += it } })
+    private fun engine(c: AgentClient = client(), parallel: Int = 2) = SyncEngine(c, store, local, parallel, onEvent = { synchronized(events) { events += it } })
     private fun reconcile() = Reconciler(store).reconcile(client().ls(dir), nowMs = 1_000, firstPairing = FirstPairing.VSE)
 
     @Test fun `stazeni a overeni tri souboru paralelne`() = runBlocking {
@@ -61,6 +61,26 @@ class SyncEngineTest {
         }
         assertEquals(0, store.all().count { it.isNew })
         assertTrue(pixel.listFiles()!!.none { it.name.endsWith(".part") })
+    }
+
+    @Test fun `karta s datovymi slozkami - vypis vsech DCIM podslozek a stazeni z nich`() = runBlocking {
+        // jako na těle 8. 11. 2026: prázdná 100MSDCF + datové složky 1nnYMMDD
+        File(card, "DCIM/10261101").mkdirs(); File(card, "DCIM/10361107").mkdirs()
+        val a = File(card, "DCIM/10261101/NCK00747.ARW").apply { writeBytes(Random(11).nextBytes(120_000)) }
+        val b = File(card, "DCIM/10361107/NCK01518.ARW").apply { writeBytes(Random(12).nextBytes(90_000)) }
+        File(card, "DCIM/10361107/C0001.MP4").writeBytes(ByteArray(10))
+        val entries = client().lsCard()
+        assertEquals(setOf("NCK00747.ARW", "NCK01518.ARW", "C0001.MP4"), entries.map { it.name }.toSet())
+        Reconciler(store).reconcile(entries, nowMs = 1_000, firstPairing = FirstPairing.VSE)
+        assertEquals(mapOf("NCK00747.ARW" to "DCIM/10261101", "NCK01518.ARW" to "DCIM/10361107"),
+            store.all().associate { it.key.name to it.cardDir })
+        val fin = engine().run()
+        assertEquals(2, fin.verified); assertEquals(0, fin.failed)
+        for (f in listOf(a, b)) {
+            val rec = store.all().single { it.key.name == f.name }
+            assertEquals(FileState.OVERENO, rec.state)
+            assertTrue(File(rec.localPath!!).readBytes().contentEquals(f.readBytes()))
+        }
     }
 
     @Test fun `vypadek uprostred souboru - pauza, bytesDone, pokracovani od offsetu`() = runBlocking {

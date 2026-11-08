@@ -14,6 +14,7 @@ import com.nicky.rincewinder.core.FileKey
 import com.nicky.rincewinder.core.FileRecord
 import com.nicky.rincewinder.core.FirstPairing
 import com.nicky.rincewinder.core.QrPairing
+import com.nicky.rincewinder.core.lsCard
 import com.nicky.rincewinder.core.Reconciler
 import com.nicky.rincewinder.data.SafLocalFiles
 import com.nicky.rincewinder.sync.SyncService
@@ -25,8 +26,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Calendar
-
-const val CARD_DIR = "DCIM/100MSDCF"
 
 /** Jeden držák stavu pro všechny obrazovky; vše síťové mimo hlavní vlákno. */
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -75,7 +74,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setManualIp(ip: String) { prefs.lastIp = ip.trim(); refresh() }
 
     private suspend fun listCard(host: String) {
-        val ls = withContext(Dispatchers.IO) { runCatching { a.finder.client(host).ls(CARD_DIR) }.getOrNull() } ?: return
+        val ls = withContext(Dispatchers.IO) { runCatching { a.finder.client(host).lsCard() }.getOrNull() } ?: return
         if (!prefs.firstPairingDone && store.isEmpty()) {
             val arw = ls.filter { it.isArw }
             pendingLs = ls
@@ -112,13 +111,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         withContext(Dispatchers.IO) {
             val c = client() ?: return@withContext emptyList<FileRecord>() to selected.map { it to "tělo nedostupné" }
             val l = localFiles() ?: return@withContext emptyList<FileRecord>() to selected.map { it to "složka nedostupná" }
-            DeleteFlow(c, store, l, CARD_DIR).preview(selected)
+            DeleteFlow(c, store, l).preview(selected)
         }
 
     suspend fun deleteFromCard(selected: Collection<FileRecord>): DeleteOutcome? = withContext(Dispatchers.IO) {
         val c = client() ?: return@withContext null
         val l = localFiles() ?: return@withContext null
-        runCatching { DeleteFlow(c, store, l, CARD_DIR).delete(selected) }.getOrElse { e -> say("Mazání selhalo: ${e.message}"); null }
+        runCatching { DeleteFlow(c, store, l).delete(selected) }.getOrElse { e -> say("Mazání selhalo: ${e.message}"); null }
     }
 
     suspend fun verifyMd5(rec: FileRecord) = withContext(Dispatchers.IO) {
@@ -126,7 +125,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val l = localFiles() ?: return@withContext
         val path = rec.localPath ?: return@withContext
         runCatching {
-            val agentMd5 = c.md5("$CARD_DIR/${rec.key.name}"); val localMd5 = l.md5(path)
+            val agentMd5 = c.md5(rec.cardPath); val localMd5 = l.md5(path)
             val same = agentMd5 == localMd5
             store.update(rec.key) { it.copy(state = if (same) com.nicky.rincewinder.core.FileState.OVERENO else com.nicky.rincewinder.core.FileState.CHYBA, md5Agent = agentMd5, md5Local = localMd5, errorReason = if (same) null else "MD5 nesedí") }
         }.onFailure { say("Ověření selhalo: ${it.message}") }

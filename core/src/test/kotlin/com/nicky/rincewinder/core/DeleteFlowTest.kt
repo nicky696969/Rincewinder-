@@ -35,7 +35,7 @@ class DeleteFlowTest {
 
     private fun downloadAll() = runBlocking {
         Reconciler(store).reconcile(client().ls(dir), 1, FirstPairing.VSE)
-        SyncEngine(client(), store, local, dir).run()
+        SyncEngine(client(), store, local).run()
     }
 
     @Test fun `smaze jen overene s platnym tokenem, zmeneny soubor vrati 409`() {
@@ -45,7 +45,7 @@ class DeleteFlowTest {
         // B byl mezitím v těle přepsán (jiná velikost), C není vybráno
         b.writeBytes(Random(9).nextBytes(31_000))
         val selected = store.all().filter { it.key.name != "C.ARW" }
-        val out = DeleteFlow(client(), store, local, dir).delete(selected)
+        val out = DeleteFlow(client(), store, local).delete(selected)
         assertEquals(listOf("A.ARW"), out.deleted.map { it.name })
         assertEquals(listOf("B.ARW"), out.changedOnCard.map { it.name })
         assertFalse(a.exists(), "A smazán z karty")
@@ -60,7 +60,7 @@ class DeleteFlowTest {
         arw("A.ARW", 1)
         downloadAll()
         val rec = store.all().single()
-        val e = assertFailsWith<AgentHttpException> { DeleteFlow(client(key = null), store, local, dir).delete(listOf(rec)) }
+        val e = assertFailsWith<AgentHttpException> { DeleteFlow(client(key = null), store, local).delete(listOf(rec)) }
         assertEquals(403, e.code)
         assertTrue(File(card, "$dir/A.ARW").exists())
         val e2 = assertFailsWith<AgentHttpException> { client().rmToken("RINCEAGT.LOG", 0, 0) }

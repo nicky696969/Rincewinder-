@@ -29,7 +29,12 @@ data class FileRecord(
     val errorReason: String? = null,
     val lastSeenOnCard: Long = 0,
     val firstSeen: Long = 0,
+    /** Složka na kartě (např. `DCIM/10361107`). A7 II s datovým formátem složek ukládá do více složek najednou. */
+    val cardDir: String = DEFAULT_CARD_DIR,
 ) {
+    /** Cesta souboru pro Agenta. */
+    val cardPath: String get() = "$cardDir/${key.name}"
+
     /** Jedna definice „nové“ pro tlačítko, počet na Domů i filtr (UX_NAVRH, pravidla). */
     val isNew: Boolean
         get() = state == FileState.NA_KARTE || state == FileState.CHYBA ||
@@ -42,6 +47,9 @@ data class FileRecord(
     /** Mazat z karty jde jen ověřené; existenci lokální kopie znovu ověří [LocalCheck] těsně před dialogem. */
     val isDeletable: Boolean get() = state == FileState.OVERENO
 }
+
+/** Výchozí složka (standardní formát složek Sony); se zapnutým datovým formátem jsou to `DCIM/1nnYMMDD`. */
+const val DEFAULT_CARD_DIR = "DCIM/100MSDCF"
 
 /** Souhrn pro Domů: „23 nových ARW · 1,1 GB“. */
 data class NewSummary(val count: Int, val bytes: Long)

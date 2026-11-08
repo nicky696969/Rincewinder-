@@ -24,13 +24,13 @@ class Thumbs(ctx: Context) {
 
     fun cached(key: FileKey): Bitmap? = mem.get(id(key))
 
-    suspend fun load(key: FileKey, cardDir: String, client: () -> AgentClient?): Bitmap? = withContext(Dispatchers.IO) {
+    suspend fun load(key: FileKey, cardPath: String, client: () -> AgentClient?): Bitmap? = withContext(Dispatchers.IO) {
         val id = id(key)
         mem.get(id)?.let { return@withContext it }
         val f = File(dir, "$id.jpg")
         val bytes = if (f.isFile) f.readBytes() else {
             val c = client() ?: return@withContext null
-            val b = runCatching { c.thumb("$cardDir/${key.name}", 400) }.getOrNull() ?: return@withContext null
+            val b = runCatching { c.thumb(cardPath, 400) }.getOrNull() ?: return@withContext null
             runCatching { f.writeBytes(b) }
             b
         }
@@ -44,8 +44,8 @@ class Thumbs(ctx: Context) {
     }
 
     /** Celý vložený JPEG pro velký náhled (největší z ARW, `min=0` vrací největší). */
-    suspend fun full(key: FileKey, cardDir: String, client: AgentClient): Bitmap? = withContext(Dispatchers.IO) {
-        val b = runCatching { client.thumb("$cardDir/${key.name}", 1600) }.getOrNull() ?: return@withContext null
+    suspend fun full(key: FileKey, cardPath: String, client: AgentClient): Bitmap? = withContext(Dispatchers.IO) {
+        val b = runCatching { client.thumb(cardPath, 1600) }.getOrNull() ?: return@withContext null
         BitmapFactory.decodeByteArray(b, 0, b.size)
     }
 }

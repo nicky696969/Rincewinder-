@@ -6,8 +6,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
-/** Řádek z `GET /ls`: `name;size;mtimeMs;d|f`. */
-data class LsEntry(val name: String, val size: Long, val mtime: Long, val isDir: Boolean) {
+/** Řádek z `GET /ls`: `name;size;mtimeMs;d|f`. [dir] = složka, ze které výpis pochází (doplní volající). */
+data class LsEntry(val name: String, val size: Long, val mtime: Long, val isDir: Boolean, val dir: String = DEFAULT_CARD_DIR) {
     val isArw: Boolean get() = !isDir && name.endsWith(".ARW", ignoreCase = true)
     fun toKey() = FileKey(name, size, mtime)
 }
@@ -30,6 +30,16 @@ data class AgentStatus(
 class FileStream(val input: InputStream, val from: Long, val length: Long, val total: Long) : AutoCloseable {
     override fun close() = input.close()
 }
+
+/**
+ * Výpis všech ARW z karty: projde podsložky `DCIM` (formát složek může být standardní `100MSDCF`
+ * i datový `10361107`; doloženo na těle 8. 11. 2026). Prázdná nebo nečitelná podsložka se přeskočí.
+ */
+@Throws(IOException::class)
+fun AgentClient.lsCard(root: String = "DCIM"): List<LsEntry> =
+    ls(root).filter { it.isDir }.flatMap { d ->
+        try { ls("$root/${d.name}") } catch (e: AgentHttpException) { if (e.code == 404) emptyList() else throw e }
+    }
 
 /** Klient Agenta na těle. Rozhraní kvůli testům (falešný klient pro MD5 neshodu apod.). */
 interface AgentClient {
@@ -120,7 +130,7 @@ class HttpAgentClient(
         text("/ls", q(path)).lineSequence().filter { it.isNotBlank() }.map { line ->
             val p = line.split(';')
             if (p.size < 4) throw IOException("špatný řádek /ls: $line")
-            LsEntry(p[0], p[1].toLong(), p[2].toLong(), p[3] == "d")
+            LsEntry(p[0], p[1].toLong(), p[2].toLong(), p[3] == "d", path)
         }.toList()
 
     override fun openFile(path: String, from: Long): FileStream {

@@ -1,5 +1,6 @@
 package com.nicky.rincewinder.data
 
+import com.nicky.rincewinder.core.DEFAULT_CARD_DIR
 import com.nicky.rincewinder.core.FileKey
 import com.nicky.rincewinder.core.FileRecord
 import com.nicky.rincewinder.core.FileState
@@ -42,7 +43,7 @@ class JsonFileStore(private val file: File) : FileStore {
             put("state", r.state.name)
             put("localPath", r.localPath); put("md5Agent", r.md5Agent); put("md5Local", r.md5Local)
             put("bytesDone", r.bytesDone); put("errorReason", r.errorReason)
-            put("lastSeenOnCard", r.lastSeenOnCard); put("firstSeen", r.firstSeen)
+            put("lastSeenOnCard", r.lastSeenOnCard); put("firstSeen", r.firstSeen); put("cardDir", r.cardDir)
         })
         val tmp = File(file.path + ".tmp")
         tmp.writeText(arr.toString())
@@ -65,6 +66,7 @@ class JsonFileStore(private val file: File) : FileStore {
                 errorReason = o.optString("errorReason", "").ifEmpty { null },
                 lastSeenOnCard = o.optLong("lastSeenOnCard", 0),
                 firstSeen = o.optLong("firstSeen", 0),
+                cardDir = o.optString("cardDir", DEFAULT_CARD_DIR),
             )
         }
         _records.value = map.values.toList()

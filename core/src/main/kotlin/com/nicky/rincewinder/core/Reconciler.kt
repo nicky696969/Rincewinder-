@@ -21,10 +21,10 @@ class Reconciler(private val store: FileStore) {
         val onCard = entries.filter { it.isArw }.associateBy { it.toKey() }
         var added = 0
         var old = 0
-        for ((key, _) in onCard) {
+        for ((key, entry) in onCard) {
             val cur = store.get(key)
             if (cur != null) {
-                store.upsert(cur.copy(lastSeenOnCard = nowMs))
+                store.upsert(cur.copy(lastSeenOnCard = nowMs, cardDir = entry.dir))
                 continue
             }
             val state = if (first) when (firstPairing) {
@@ -33,7 +33,7 @@ class Reconciler(private val store: FileStore) {
                 FirstPairing.OD_DNESKA -> if (key.mtime >= todayStartMs) FileState.NA_KARTE else FileState.STARE
             } else FileState.NA_KARTE
             if (state == FileState.STARE) old++ else added++
-            store.upsert(FileRecord(key, state, lastSeenOnCard = nowMs, firstSeen = nowMs))
+            store.upsert(FileRecord(key, state, lastSeenOnCard = nowMs, firstSeen = nowMs, cardDir = entry.dir))
         }
         var gone = 0
         for (rec in store.all()) {

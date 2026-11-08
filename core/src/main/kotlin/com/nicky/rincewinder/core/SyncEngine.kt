@@ -29,7 +29,6 @@ class SyncEngine(
     private val client: AgentClient,
     private val store: FileStore,
     private val local: LocalFiles,
-    private val cardDir: String = "DCIM/100MSDCF",
     private val parallel: Int = 2,
     private val verifyMd5: Boolean = true,
     private val onEvent: (SyncEvent) -> Unit = {},
@@ -66,7 +65,7 @@ class SyncEngine(
         var rec = start
         while (true) {
             attempt++
-            val path = "$cardDir/${rec.key.name}"
+            val path = rec.cardPath
             val part = local.partPath(rec.key.name)
             val target = local.targetPath(rec.key.name)
             try {

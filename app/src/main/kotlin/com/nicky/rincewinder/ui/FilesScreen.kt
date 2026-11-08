@@ -88,7 +88,7 @@ fun FilesScreen(vm: AppViewModel, modifier: Modifier) {
             items(shown, key = { it.key.name + it.key.size }) { rec ->
                 val isSel = rec.key.name in selected.value
                 val bmp by produceState<Bitmap?>(vm.thumbs.cached(rec.key), rec.key) {
-                    if (value == null) value = vm.thumbs.load(rec.key, CARD_DIR) { vm.client() }
+                    if (value == null) value = vm.thumbs.load(rec.key, rec.cardPath) { vm.client() }
                 }
                 Tile(rec, bmp, isSel, transfer.currentName == rec.key.name,
                     onToggle = { selected.value = if (isSel) selected.value - rec.key.name else selected.value + rec.key.name },
@@ -150,7 +150,7 @@ private fun Tile(rec: FileRecord, bmp: Bitmap?, selected: Boolean, active: Boole
 private fun PreviewDialog(vm: AppViewModel, rec: FileRecord, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     val big by produceState<Bitmap?>(vm.thumbs.cached(rec.key), rec.key) {
-        vm.client()?.let { c -> vm.thumbs.full(rec.key, CARD_DIR, c)?.let { value = it } }
+        vm.client()?.let { c -> vm.thumbs.full(rec.key, rec.cardPath, c)?.let { value = it } }
     }
     AlertDialog(
         onDismissRequest = onClose,
