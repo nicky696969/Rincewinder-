@@ -83,6 +83,18 @@ class SyncEngineTest {
         }
     }
 
+    @Test fun `hotova kopie bez overeni - nestahuje znovu, jen overi`() = runBlocking {
+        // jako na těle 8. 11. 2026: tělo zhaslo při GET /md5, soubor na Pixelu je celý, záznam STAHUJE_SE 0 B
+        val f = arw("DONE.ARW", 200_000, 21)
+        reconcile()
+        File(local.targetPath("DONE.ARW")).writeBytes(f.readBytes())
+        store.update(FileKey("DONE.ARW", f.length(), f.lastModified())) { it.copy(state = FileState.STAHUJE_SE, bytesDone = 0) }
+        val fin = engine().run()
+        assertEquals(1, fin.verified)
+        assertTrue(events.none { it is SyncEvent.Progress }, "nic se nemělo stahovat")
+        assertEquals(FileState.OVERENO, store.all().single().state)
+    }
+
     @Test fun `vypadek uprostred souboru - pauza, bytesDone, pokracovani od offsetu`() = runBlocking {
         val f = arw("BIG.ARW", 1_000_000, 7)
         reconcile()

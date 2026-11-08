@@ -121,9 +121,14 @@ class SyncService : Service() {
                             app.prefs.lastMbps = mbps
                         }
                         _state.value = _state.value.copy(bytesDone = bytesAcc, mbps = mbps, currentName = ev.key.name)
-                        val left = Format.eta(bytesTotal - bytesAcc, mbps)
-                        notify("Rincewinder · přenos", "${doneFiles + 1} z ${total.size} · ${ev.key.name}\n${Format.mbps(mbps)} · zbývá $left",
-                            ((bytesAcc * 100) / maxOf(1, bytesTotal)).toInt(), 100, false)
+                        // notifikaci nejvýš 1× za sekundu: Android zahazuje víc než 5 aktualizací/s
+                        // (8. 11. 2026 log: „Shedding notify … rate limit (5.0) exceeded“, appka posílala ~800/s)
+                        if (now - lastNotifyMs >= 1000) {
+                            lastNotifyMs = now
+                            val left = Format.eta(bytesTotal - bytesAcc, mbps)
+                            notify("Rincewinder · přenos", "${doneFiles + 1} z ${total.size} · ${ev.key.name}\n${Format.mbps(mbps)} · zbývá $left",
+                                ((bytesAcc * 100) / maxOf(1, bytesTotal)).toInt(), 100, false)
+                        }
                     }
                     is SyncEvent.Verified -> { doneFiles++; _state.value = _state.value.copy(doneFiles = doneFiles) }
                     is SyncEvent.Failed -> { doneFiles++; _state.value = _state.value.copy(doneFiles = doneFiles, lastMessage = "${ev.key.name}: ${ev.reason}") }
@@ -143,6 +148,7 @@ class SyncService : Service() {
     }
 
     private val lastSeen = HashMap<FileKey, Long>()
+    @Volatile private var lastNotifyMs = 0L
 
     private fun notify(title: String, text: String, done: Int, total: Int, waiting: Boolean) {
         getSystemService(android.app.NotificationManager::class.java)

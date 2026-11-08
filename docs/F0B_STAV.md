@@ -44,6 +44,19 @@ Další zjištění:
 
 Klávesy, které aplikace dostává (`code`/`scan`): střed ovladače `23/232`, MENU `82/514`, odchod `0/207`, spoušť napůl `0/516+517`, naplno `0/518`.
 
+## M4/M5 na Pixelu (8. 11. 2026, Pixel 9 Pro, Android 17)
+
+| Krok | Výsledek |
+|---|---|
+| Instalace `:app` přes USB, onboarding (složka SAF, oprávnění, přeskočený QR) | OK; `ACCESS_LOCAL_NETWORK` i `POST_NOTIFICATIONS` uděleny |
+| Domů našlo tělo podle poslední IP, `/status` čte | OK |
+| Karta: 435 ARW / 19,8 GB ve třech datových složkách (`10161031`, `10261101`, `10361107`); `100MSDCF` prázdná → 404 | opraveno: čtou se všechny podsložky `DCIM` |
+| Mřížka náhledů: část dlaždic tmavá | RINCEAGT.LOG: `open failed: EBUSY` při ~15 paralelních `/thumb` → fronta max 2 + 3 pokusy; poté 0× EBUSY, 133 náhledů v cache |
+| Stažení 3 vybraných ARW (141 MB) | 3/3 OVERENO, MD5 Pixel = MD5 tělo, 2,87 MB/s |
+| **Test výpadku**: dávka 8 ARW (380 MB), tělo vypnuto u 3. souboru | `.part` držel 39,6 MB; po zapnutí těla (Agent i adbd přežily — warm boot, uptime Agenta 2652 s) služba sama navázala od offsetu; 8/8 OVERENO, křížová MD5 9/9, souhrn „8 staženo, vše ověřeno ✓“, 2,95 MB/s |
+| Chyby z výpadku (opraveny, testy 18/18) | 1) výpadek během `/md5` zahodil offset hotové kopie (soubor se stahoval znovu); 2) sken ADB sekvenční ≈ 100 s → paralelní; 3) ~800 aktualizací notifikace/s, Android zahazoval („Shedding … rate limit 5.0“) → max 1×/s |
+| Cílová složka | Nicky omylem vybral `/sdcard/0000000000/` místo `Pictures/Rincewinder`; výběr teď začíná v `Pictures` |
+
 ## Co zbývá ověřit
 
 | # | Otázka | Stav |

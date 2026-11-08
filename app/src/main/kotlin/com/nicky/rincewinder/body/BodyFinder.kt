@@ -11,6 +11,11 @@ import com.nicky.rincewinder.core.Discovery
 import com.nicky.rincewinder.core.HttpAgentClient
 import com.nicky.rincewinder.data.Prefs
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.net.Inet4Address
 
@@ -63,9 +68,13 @@ class BodyFinder(private val ctx: Context, private val prefs: Prefs) {
         val prefix = ownIpv4()?.let { Discovery.prefixOf(it) } ?: return@withContext BodyState()
         val found = Discovery.scan(prefix, 8808, prefs.bodyMac)
         found.firstOrNull()?.let { return@withContext probe(it.host) }
-        // Agent neběží nikde: hledat ADB (5555) — tělo bez Agenta
-        val adbHosts = (1..254).map { "$prefix$it" }.chunked(32).flatMap { chunk ->
-            chunk.filter { Discovery.tcpOpen(it, 5555, 400) }
+        // Agent neběží nikde: hledat ADB (5555) — tělo bez Agenta. Paralelně, jinak sken trvá ~100 s
+        // (zjištěno při testu výpadku 8. 11. 2026: notifikace o výpadku přišla o dvě minuty později).
+        val sem = Semaphore(48)
+        val adbHosts = coroutineScope {
+            (1..254).map { i ->
+                async { sem.withPermit { "$prefix$i".takeIf { Discovery.tcpOpen(it, 5555, 400) } } }
+            }.awaitAll().filterNotNull()
         }
         val h = adbHosts.firstOrNull { runCatching { AdbOps.thirdPartyPackages(it).any { p -> p.contains("openmemories") } }.getOrDefault(false) }
             ?: return@withContext BodyState()

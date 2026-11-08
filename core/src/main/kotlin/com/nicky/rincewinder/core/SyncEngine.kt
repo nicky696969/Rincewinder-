@@ -69,12 +69,14 @@ class SyncEngine(
             val part = local.partPath(rec.key.name)
             val target = local.targetPath(rec.key.name)
             try {
+                // 0) hotová kopie už existuje (výpadek přišel až při ověřování) → nestahovat znovu, jen ověřit
+                val haveFull = local.size(target) == rec.key.size
                 // 1) stáhnout (s pokračováním od velikosti .part)
-                var done = local.size(part) ?: 0L
+                var done = if (haveFull) rec.key.size else local.size(part) ?: 0L
                 if (done > rec.key.size) { local.delete(part); done = 0 }
                 rec = store.update(rec.key) { it.copy(state = FileState.STAHUJE_SE, bytesDone = done, errorReason = null) } ?: return@withContext false
                 onEvent(SyncEvent.Started(rec.key, done))
-                if (done < rec.key.size) {
+                if (!haveFull && done < rec.key.size) {
                     client.openFile(path, done).use { fs ->
                         if (fs.total >= 0 && fs.total != rec.key.size) {
                             fail(rec, "soubor na kartě má jinou velikost (${fs.total})"); return@withContext false
@@ -87,15 +89,17 @@ class SyncEngine(
                         done = acc
                     }
                 }
-                val got = local.size(part) ?: 0L
-                if (got != rec.key.size) {
-                    // stream skončil dřív bez výjimky: považovat za výpadek, ne za CHYBA
-                    store.update(rec.key) { it.copy(bytesDone = got) }
-                    pause(rec.key, "přenos skončil předčasně ($got z ${rec.key.size} B)")
-                    return@withContext null
+                if (!haveFull) {
+                    val got = local.size(part) ?: 0L
+                    if (got != rec.key.size) {
+                        // stream skončil dřív bez výjimky: považovat za výpadek, ne za CHYBA
+                        store.update(rec.key) { it.copy(bytesDone = got) }
+                        pause(rec.key, "přenos skončil předčasně ($got z ${rec.key.size} B)")
+                        return@withContext null
+                    }
+                    local.finish(part, target)
                 }
-                local.finish(part, target)
-                rec = store.update(rec.key) { it.copy(state = FileState.STAZENO, localPath = target, bytesDone = got) }!!
+                rec = store.update(rec.key) { it.copy(state = FileState.STAZENO, localPath = target, bytesDone = rec.key.size) }!!
 
                 // 2) ověřit
                 if (!verifyMd5) return@withContext true
@@ -110,7 +114,12 @@ class SyncEngine(
                 if (attempt >= 2) { fail(rec, "MD5 nesedí ani po opakování ($md5Local ≠ $md5Agent)"); return@withContext false }
                 store.update(rec.key) { it.copy(state = FileState.NA_KARTE, bytesDone = 0, localPath = null) }
             } catch (e: IOException) {
-                store.update(rec.key) { it.copy(state = FileState.STAHUJE_SE, bytesDone = local.size(part) ?: 0L) }
+                // výpadek při ověřování: kopie je celá, držet STAZENO; jinak STAHUJE_SE s offsetem .part
+                val full = local.size(target) == rec.key.size
+                store.update(rec.key) {
+                    if (full) it.copy(state = FileState.STAZENO, localPath = target, bytesDone = rec.key.size)
+                    else it.copy(state = FileState.STAHUJE_SE, bytesDone = local.size(part) ?: 0L)
+                }
                 pause(rec.key, e.message ?: e.toString())
                 return@withContext null
             }

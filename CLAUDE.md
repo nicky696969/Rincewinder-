@@ -55,7 +55,10 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 | Cesta ke kartě z telnetu: `/android/storage/sdcard0`; z Androidu `/storage/sdcard0`. **Z adb (uid shell) je karta nečitelná** (FUSE `FuFsys`, Permission denied i na stat/open/pull); aplikace (uid 10xxx, gid 1015) i root ji čtou | Doloženo (F0) | sonda 30. 10. |
 | adb shell těla má `md5`, `date`, `dd`, `am`, `pm`, `dumpsys`, `logcat`; nemá `which`, `head`, `tail`, `grep`, `busybox`. Root telnet (busybox) má `tar`, `grep`, `sed`, `dd`, `cp`; nemá `nc`, `httpd`, `md5sum`, `wc`. Telnet je binárně nebezpečný (LF→CRLF) | Doloženo (F0) | sonda 30. 10. |
 | uid shell má `INSTALL_PACKAGES`/`DELETE_PACKAGES` → `pm install -r` / `pm uninstall` / `am start -n` přes adb fungují | Doloženo | AOSP 4.1.2 platform.xml + praxe TrapFocus |
-| adbd od Tweaku startuje přes Sony OSAL IPC mimo Android lifecycle → přežije odchod z Tweaku; **po restartu těla nestartuje sám** (žádný boot receiver) | Doloženo / Odvozeno | zdroje OpenMemories-Tweak |
+| adbd od Tweaku startuje přes Sony OSAL IPC mimo Android lifecycle → přežije odchod z Tweaku. **Vypnutí a zapnutí hlavním vypínačem přežije adbd i Agent** (Sony obnoví uložený obraz Androidu — „warm boot“, Agent měl po zapnutí uptime 2652 s). Po úplném studeném startu (vyndaná baterie / dlouhé vypnutí) se adbd zapíná v Tweaku — Odvozeno, netestováno | Doloženo (8. 11. 2026) / Odvozeno | test výpadku, zdroje OpenMemories-Tweak |
+| **Test výpadku 8. 11. 2026**: tělo vypnuto uprostřed dávky 8 ARW → služba na Pixelu držela offsety (`.part` 39,6 MB), po zapnutí těla sama navázala od offsetu a dokončila; 8/8 OVERENO, křížová kontrola MD5 (Pixel `md5sum` vs. Agent `/md5`) 9/9 shoda, 2,95 MB/s. Nalezené a opravené chyby: ztráta offsetu při výpadku během MD5, sekvenční sken ADB (~100 s), zahlcení notifikací (~800/s, Android zahazoval) | Doloženo | `docs/F0B_STAV.md` |
+| Karta FuFsys vrací `open failed: EBUSY` při mnoha souběžně otevřených souborech (~15 paralelních `/thumb`) → Pixel drží max 2 dotazy na náhledy najednou | Doloženo (RINCEAGT.LOG 8. 11.) | — |
+| A7 II s datovým formátem složek ukládá do `DCIM/1nnYMMDD` (např. `10361107`), `100MSDCF` může být prázdná → appka čte všechny podsložky `DCIM` | Doloženo (8. 11.) | — |
 | dadb 2.0.0 (okio, Apache 2.0): AUTH správně přeskočí, ale **spadne na banneru `device::` bez `features=`**; `shell()` jen `shell,v2` (4.1 zná jen `shell:`); `uninstall` volá `cmd` (neexistuje); `sync:` push/pull kompatibilní (64 000 B < 65 536) | Doloženo | zdroje dadb master + AOSP jb-release |
 | Android 4.1 adbd: `A_VERSION 0x01000000`, `MAX_PAYLOAD 4096`, žádný `A_AUTH` (RSA až 4.2.2) | Doloženo | AOSP jb-release adb.h |
 | Sony API: `TimeUtil.setCurrentTime` (instanční, „V6“), `Settings.setAutoPowerOffTime` (V7), `CameraEx.getLensInfo()`, `ScalarProperties`; `date -s` z shellu padá (/dev/alarm). Tweaky zapisují do Backup.bin přes OSAL IPC bez rootu (OpenMemories-Platform, MIT) | Doloženo; dostupnost V6/V7 na API 2.10 **Nevím** | stuby OpenMemories-Framework → ověří F0b |
@@ -117,7 +120,7 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 |---|---|---|
 | ~~F0~~ | **hotovo 30. 10. 2026** — viz Ověřená fakta a Prostředí na Aceru | Claude Code |
 | **F0b** | sonda na těle: mini Agent APK (Service + HTTP range GET + reflexe Sony API) — přežije Service MENU? propustnost HTTP? WakeLock drží tělo? `am startservice`? Návrh: `docs/F0B_SONDA.md` | Claude Code (teď) |
-| **F1** | M1 `:core`, M2 Agent 0.2.0 (na těle), M3 `:dadb-fork` (ověřen živě), M4a Discovery — **hotovo**; zbývá M4 `:app` (Pixel: onboarding, Domů, mřížka, FGS), M5 ověření na těle, M6 dokumentace. Zadání `docs/ZADANI_F1.md` | Fable |
+| **F1** | M1 `:core`, M2 Agent 0.2.0 (na těle), M3 `:dadb-fork` (ověřen živě), M4 `:app` (Pixel, Android 17: onboarding, Domů, mřížka, FGS; **běží na Pixelu, 8. 11.**), M5 částečně (stažení + ověření 11 ARW, výpadek a navázání — hotovo; **mazání z karty netestováno**) — zbývá M6 dokumentace, design kolo (UX podle reálných obrazovek), test mazání. Zadání `docs/ZADANI_F1.md` | Fable |
 | F2 | správce APK (GitHub Releases, podpisy) + diagnostika (logcat, baterie, místo) + fronta/mazání s potvrzením | Fable |
 | F3 | OTG kopírování (MTP / Mass Storage) — hromadný sync | Fable |
 | F4 | PMCA instalátor přes OTG: největší riziko, port protokolu Sony-PMCA-RE (MIT) | Fable, předtím rešerše protokolu (docs v repu) |
@@ -127,10 +130,12 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 
 | Otázka | Kdo |
 |---|---|
-| Verze Androidu na Pixelu 9 Pro | Nicky |
-| Přežije Android Service PMCA appky odchod z menu? Drží WakeLock tělo vzhůru? Propustnost HTTP z agenta? | F0b |
-| Jsou `TimeUtil.setCurrentTime` (V6) a `Settings.setAutoPowerOffTime` (V7) na API 2.10? | F0b (reflexe) |
-| Startuje adbd po restartu těla sám, nebo se zapíná v Tweaku? | Nicky (vypnout/zapnout tělo, `adb connect`) |
+| ~~Verze Androidu na Pixelu 9 Pro~~ | **Android 17, API 37** (build CP3A.261005.005) |
+| ~~Přežije Service odchod z menu / WakeLock / propustnost~~ | zodpovězeno F0b, viz Ověřená fakta |
+| Jsou `TimeUtil.setCurrentTime` (V6) a `Settings.setAutoPowerOffTime` (V7) na API 2.10? | existují (F0b); zápis netestován |
+| ~~Startuje adbd po restartu těla sám?~~ | krátké vypnutí/zapnutí přežije (warm boot); studený start netestován |
+| Mazání z karty z Pixelu (token, 409) — jen na testovacím souboru s výslovným pokynem | M5 |
+| Design kolo: reálné obrazovky Pixelu vs. `docs/UX_WIREFRAMES.md` | Nicky + Claude |
 | Sníží `iw dev ath0 set power_save off` latenci? (zásah do těla, vratný restartem) | se souhlasem |
 | GitHub repo: autorizovat GitHub plugin (`/mcp`), nebo založit v GitHub Desktopu | Nicky |
 | Záloha podpisových klíčů (TrapFocus i nový Rincewinder) | Nicky |
