@@ -10,7 +10,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.GridView
@@ -74,21 +83,31 @@ private fun Root(vm: AppViewModel) {
         }.addOnFailureListener { vm.say("Sken selhal: ${it.message}") }
     }
 
-    Scaffold(
+    // pozadí „Dvě světla“: modrá hodina nahoře, sodík dole, jemné zrno
+    Box(Modifier.fillMaxSize().background(Palette.Sky).grain()) { Scaffold(
+        containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snack) },
         bottomBar = {
-            NavigationBar {
-                Tab.entries.forEachIndexed { i, t ->
-                    NavigationBarItem(
-                        selected = tab == i, onClick = { tab = i },
-                        icon = {
-                            Icon(
-                                when (t) { Tab.DOMU -> Icons.Default.Home; Tab.SOUBORY -> Icons.Default.GridView; Tab.APKY -> Icons.Default.Apps; Tab.DIAG -> Icons.Default.MonitorHeart },
-                                contentDescription = t.label,
-                            )
-                        },
-                        label = { Text(t.label) },
-                    )
+            Column {
+                Joint()
+                NavigationBar(containerColor = Color(0xCC0E0B08), tonalElevation = 0.dp) {
+                    Tab.entries.forEachIndexed { i, t ->
+                        NavigationBarItem(
+                            selected = tab == i, onClick = { tab = i },
+                            icon = {
+                                Icon(
+                                    when (t) { Tab.DOMU -> Icons.Default.Home; Tab.SOUBORY -> Icons.Default.GridView; Tab.APKY -> Icons.Default.Apps; Tab.DIAG -> Icons.Default.MonitorHeart },
+                                    contentDescription = t.label,
+                                )
+                            },
+                            label = { Text(t.label.uppercase(), letterSpacing = 0.12.em, fontSize = 10.sp) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Palette.SodiumLight, selectedTextColor = Palette.SodiumLight,
+                                indicatorColor = Palette.Sodium.copy(alpha = 0.16f),
+                                unselectedIconColor = Palette.MuteWarm, unselectedTextColor = Palette.MuteWarm,
+                            ),
+                        )
+                    }
                 }
             }
         },
@@ -100,7 +119,7 @@ private fun Root(vm: AppViewModel) {
             Tab.APKY -> AppsScreen(vm, m)
             Tab.DIAG -> DiagScreen(vm, m)
         }
-    }
+    } }
 }
 
 fun openAppSettings(ctx: android.content.Context) {

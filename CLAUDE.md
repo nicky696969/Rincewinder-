@@ -58,6 +58,7 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 | adbd od Tweaku startuje přes Sony OSAL IPC mimo Android lifecycle → přežije odchod z Tweaku. **Vypnutí a zapnutí hlavním vypínačem přežije adbd i Agent** (Sony obnoví uložený obraz Androidu — „warm boot“, Agent měl po zapnutí uptime 2652 s). Po úplném studeném startu (vyndaná baterie / dlouhé vypnutí) se adbd zapíná v Tweaku — Odvozeno, netestováno | Doloženo (8. 11. 2026) / Odvozeno | test výpadku, zdroje OpenMemories-Tweak |
 | **Test výpadku 8. 11. 2026**: tělo vypnuto uprostřed dávky 8 ARW → služba na Pixelu držela offsety (`.part` 39,6 MB), po zapnutí těla sama navázala od offsetu a dokončila; 8/8 OVERENO, křížová kontrola MD5 (Pixel `md5sum` vs. Agent `/md5`) 9/9 shoda, 2,95 MB/s. Nalezené a opravené chyby: ztráta offsetu při výpadku během MD5, sekvenční sken ADB (~100 s), zahlcení notifikací (~800/s, Android zahazoval) | Doloženo | `docs/F0B_STAV.md` |
 | Karta FuFsys vrací `open failed: EBUSY` při mnoha souběžně otevřených souborech (~15 paralelních `/thumb`) → Pixel drží max 2 dotazy na náhledy najednou | Doloženo (RINCEAGT.LOG 8. 11.) | — |
+| Vložený JPEG v ARW orientaci nenese; otočení je v IFD0 ARW (tag `0x0112`, little‑endian, v prvních 4 KB) → Pixel čte 4 KB přes Range a otáčí náhled (na kartě 6 = 90°, 8 = 270°) | Doloženo (8. 11., NCK01570/1548/1542) | — |
 | A7 II s datovým formátem složek ukládá do `DCIM/1nnYMMDD` (např. `10361107`), `100MSDCF` může být prázdná → appka čte všechny podsložky `DCIM` | Doloženo (8. 11.) | — |
 | dadb 2.0.0 (okio, Apache 2.0): AUTH správně přeskočí, ale **spadne na banneru `device::` bez `features=`**; `shell()` jen `shell,v2` (4.1 zná jen `shell:`); `uninstall` volá `cmd` (neexistuje); `sync:` push/pull kompatibilní (64 000 B < 65 536) | Doloženo | zdroje dadb master + AOSP jb-release |
 | Android 4.1 adbd: `A_VERSION 0x01000000`, `MAX_PAYLOAD 4096`, žádný `A_AUTH` (RSA až 4.2.2) | Doloženo | AOSP jb-release adb.h |
@@ -111,7 +112,7 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 | Síť (Pixel) | `INTERNET` + `ACCESS_LOCAL_NETWORK` (runtime, před skenem kontrola grantu); žádný `usesCleartextTraffic`, případný NSC až ve F4 |
 | Dlouhé přenosy | foreground service typu **connectedDevice** (`CHANGE_WIFI_STATE`, bez 6h limitu); fronta s pokračováním po výpadku je povinná (auto power‑off těla 1–30 min) |
 | Kritérium návrhu | každá funkce ≤ 1 krok v terénu navíc (skill `ramec`); dnes známé kroky: zapnout adbd v Tweaku po restartu těla, spustit Agent z menu |
-| Repo | `rincewinder`, private, vedle trapfocus-a7ii |
+| Repo | **veřejné** https://github.com/nicky696969/Rincewinder- (MIT, rozhodnutí Nickyho 8. 11. 2026), lokálně vedle trapfocus-a7ii. Protože je veřejné: do repa nikdy klíče, tokeny, klíč Agenta z QR ani Nickyho fotky; před každým push kontrola |
 | Podpis | **nový** klíč jen pro Rincewinder + záloha na zaheslované médium (na Nickym). Pozor: záloha klíče TrapFocus je taky pořád otevřená. |
 
 ## Fáze
@@ -120,7 +121,7 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 |---|---|---|
 | ~~F0~~ | **hotovo 30. 10. 2026** — viz Ověřená fakta a Prostředí na Aceru | Claude Code |
 | **F0b** | sonda na těle: mini Agent APK (Service + HTTP range GET + reflexe Sony API) — přežije Service MENU? propustnost HTTP? WakeLock drží tělo? `am startservice`? Návrh: `docs/F0B_SONDA.md` | Claude Code (teď) |
-| **F1** | M1 `:core`, M2 Agent 0.2.0 (na těle), M3 `:dadb-fork` (ověřen živě), M4 `:app` (Pixel, Android 17: onboarding, Domů, mřížka, FGS; **běží na Pixelu, 8. 11.**), M5 částečně (stažení + ověření 11 ARW, výpadek a navázání — hotovo; **mazání z karty netestováno**) — zbývá M6 dokumentace, design kolo (UX podle reálných obrazovek), test mazání. Zadání `docs/ZADANI_F1.md` | Fable |
+| **F1** | M1 `:core`, M2 Agent 0.2.0 (na těle), M3 `:dadb-fork` (ověřen živě), M4 `:app` (Pixel, Android 17: onboarding, Domů, mřížka, FGS; **běží na Pixelu, 8. 11.**), M5 částečně (stažení + ověření 11 ARW, výpadek a navázání — hotovo; **mazání z karty netestováno**) , design kolo **hotovo 8. 11.** (vizuál „Dvě světla · beton“, `docs/UX_NAVRH.md`) — zbývá M6 dokumentace, test mazání. Zadání `docs/ZADANI_F1.md` | Fable |
 | F2 | správce APK (GitHub Releases, podpisy) + diagnostika (logcat, baterie, místo) + fronta/mazání s potvrzením | Fable |
 | F3 | OTG kopírování (MTP / Mass Storage) — hromadný sync | Fable |
 | F4 | PMCA instalátor přes OTG: největší riziko, port protokolu Sony-PMCA-RE (MIT) | Fable, předtím rešerše protokolu (docs v repu) |
@@ -135,9 +136,9 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 | Jsou `TimeUtil.setCurrentTime` (V6) a `Settings.setAutoPowerOffTime` (V7) na API 2.10? | existují (F0b); zápis netestován |
 | ~~Startuje adbd po restartu těla sám?~~ | krátké vypnutí/zapnutí přežije (warm boot); studený start netestován |
 | Mazání z karty z Pixelu (token, 409) — jen na testovacím souboru s výslovným pokynem | M5 |
-| Design kolo: reálné obrazovky Pixelu vs. `docs/UX_WIREFRAMES.md` | Nicky + Claude |
+| ~~Design kolo~~ | **zamčeno 8. 11.: „Dvě světla · beton“** (`docs/UX_NAVRH.md`) |
 | Sníží `iw dev ath0 set power_save off` latenci? (zásah do těla, vratný restartem) | se souhlasem |
-| GitHub repo: autorizovat GitHub plugin (`/mcp`), nebo založit v GitHub Desktopu | Nicky |
+| ~~GitHub repo~~ | **založeno 8. 11.**, veřejné, `origin` = `nicky696969/Rincewinder-` |
 | Záloha podpisových klíčů (TrapFocus i nový Rincewinder) | Nicky |
 
 ## Dokumenty v repu
@@ -156,6 +157,6 @@ Dělba sessions: technika (F0b, dadb, Agent) zde; UX/design ve vlastní session 
 
 1. Na začátku session načíst skilly `ramec` a `sony-trap-focus`.
 2. F0b podle `docs/F0B_SONDA.md`: postavit mini Agent APK, **instalace na tělo až po souhlasu**, změřit, zapsat výsledky sem.
-3. Podle F0b dopsat `docs/ZADANI_F1.md` pro Fable a založit repo (git z GitHub Desktopu; remote po Nickyho rozhodnutí).
+3. Podle F0b dopsat `docs/ZADANI_F1.md` pro Fable a založit repo (hotovo 8. 11., veřejné na GitHubu).
 
 Historie: původní sonda F0 (cesta k DCIM, `adb pull`, shell, SDK) proběhla 30. 10. 2026; `adb pull` z karty není možný (viz Ověřená fakta).

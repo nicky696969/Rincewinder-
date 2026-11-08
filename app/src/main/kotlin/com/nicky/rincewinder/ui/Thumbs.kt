@@ -3,9 +3,12 @@ package com.nicky.rincewinder.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.util.LruCache
 import com.nicky.rincewinder.core.AgentClient
+import com.nicky.rincewinder.core.ArwOrientation
 import com.nicky.rincewinder.core.FileKey
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Semaphore
@@ -56,15 +59,39 @@ class Thumbs(ctx: Context) {
         val sample = maxOf(1, maxOf(opts.outWidth, opts.outHeight) / 480)
         val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
             ?: return@withContext null
-        mem.put(id, bmp)
-        bmp
+        val upright = rotate(bmp, degrees(key, cardPath, client))
+        mem.put(id, upright)
+        upright
     }
 
-    /** Celý vložený JPEG pro velký náhled (největší z ARW). */
+    /** Celý vložený JPEG pro velký náhled (největší z ARW), otočený podle orientace. */
     suspend fun full(key: FileKey, cardPath: String, client: AgentClient): Bitmap? = withContext(Dispatchers.IO) {
         val b = gate.withPermit { runCatching { client.thumb(cardPath, 1600) }.getOrNull() } ?: return@withContext null
-        BitmapFactory.decodeByteArray(b, 0, b.size)
+        val bmp = BitmapFactory.decodeByteArray(b, 0, b.size) ?: return@withContext null
+        rotate(bmp, degrees(key, cardPath) { client })
     }
+
+    /**
+     * Otočení z hlavičky ARW (tag 0x0112, prvních 4 KB přes Range). Vložený JPEG orientaci nenese,
+     * snímky na výšku by jinak ležely na boku. Výsledek se pamatuje na disku vedle náhledu.
+     */
+    private suspend fun degrees(key: FileKey, cardPath: String, client: () -> AgentClient?): Int {
+        val id = id(key)
+        orient[id]?.let { return it }
+        val f = File(dir, "$id.o")
+        if (f.isFile) f.readText().trim().toIntOrNull()?.let { orient[id] = it; return it }
+        val c = client() ?: return 0
+        val head = gate.withPermit { runCatching { c.readRange(cardPath, 0, ArwOrientation.HEADER_BYTES) }.getOrNull() } ?: return 0
+        val deg = ArwOrientation.degrees(ArwOrientation.parse(head))
+        runCatching { f.writeText(deg.toString()) }
+        orient[id] = deg
+        return deg
+    }
+
+    private fun rotate(bmp: Bitmap, deg: Int): Bitmap =
+        if (deg == 0) bmp else Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, Matrix().apply { postRotate(deg.toFloat()) }, true)
+
+    private val orient = ConcurrentHashMap<String, Int>()
 
     companion object {
         const val PARALLEL = 2

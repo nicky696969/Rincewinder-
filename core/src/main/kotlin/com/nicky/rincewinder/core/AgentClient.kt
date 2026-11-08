@@ -53,6 +53,21 @@ interface AgentClient {
     @Throws(IOException::class) fun rmToken(path: String, size: Long, mtime: Long): String?
     /** Smaže soubor; vrací true = smazáno, false = 409 (token neplatný nebo soubor změněn). */
     @Throws(IOException::class) fun rm(path: String, token: String): Boolean
+
+    /** Nejvýš [length] bajtů od [from] (hlavička ARW pro orientaci). Výchozí verze čte stream a zavře ho. */
+    @Throws(IOException::class) fun readRange(path: String, from: Long, length: Int): ByteArray =
+        openFile(path, from).use { fs -> fs.input.readUpTo(length) }
+}
+
+internal fun java.io.InputStream.readUpTo(length: Int): ByteArray {
+    val buf = ByteArray(length)
+    var n = 0
+    while (n < length) {
+        val r = read(buf, n, length - n)
+        if (r <= 0) break
+        n += r
+    }
+    return if (n == length) buf else buf.copyOf(n)
 }
 
 /** Stavový kód mimo 2xx, který není síťová chyba (403, 404, 409…). */
@@ -149,6 +164,19 @@ class HttpAgentClient(
     }
 
     override fun md5(path: String) = text("/md5", q(path)).trim().lowercase()
+
+    override fun readRange(path: String, from: Long, length: Int): ByteArray {
+        val c = open("/file", q(path))
+        c.setRequestProperty("Range", "bytes=$from-${from + length - 1}")
+        try {
+            val code = c.responseCode
+            if (code !in 200..299) throw AgentHttpException(code, "Range pro $path")
+            // 200 = Agent Range ignoroval; čte se jen začátek a spojení se zavře
+            return c.inputStream.use { it.readUpTo(length) }
+        } finally {
+            c.disconnect()
+        }
+    }
 
     override fun thumb(path: String, minLongSide: Int): ByteArray {
         val c = open("/thumb", q(path) + "&min=$minLongSide")

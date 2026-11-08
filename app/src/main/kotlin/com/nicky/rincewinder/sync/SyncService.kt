@@ -141,7 +141,7 @@ class SyncService : Service() {
             val verified = app.store.all().count { it.key in total.map { t -> t.key }.toSet() && it.state == com.nicky.rincewinder.core.FileState.OVERENO }
             val failed = fin.failed
             val summary = if (failed == 0) "$verified staženo, vše ověřeno ✓" else "$verified ověřeno, $failed ${Format.plural(failed, "chyba", "chyby", "chyb")}"
-            app.prefs.lastTransferSummary = "${Format.dateTime(System.currentTimeMillis())} · ${total.size} souborů · ${Format.bytes(bytesTotal)} · $summary"
+            app.prefs.lastTransferSummary = "${Format.dateTime(System.currentTimeMillis())} · ${Format.plural(total.size, "soubor", "soubory", "souborů")} · ${Format.bytes(bytesTotal)} · $summary"
             finishWith(summary, vibrate = true)
             return
         }

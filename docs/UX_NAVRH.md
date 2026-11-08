@@ -148,4 +148,22 @@ Tuto sekci přebírá technická session do `docs/ZADANI_F1.md`.
 | Mazání z karty | jen `OVERENO`; dialog s počtem, velikostí a cílovou složkou; potvrzení podržením 1,5 s; Agent: `POST /rm` s potvrzovacím tokenem z předchozího `GET` |
 | Oprávnění | `ACCESS_LOCAL_NETWORK` + `POST_NOTIFICATIONS` v onboardingu 2/3; při odmítnutí karta na Domů s odkazem do nastavení, žádný tichý timeout |
 | Textová pole | jediné: název složky exportu (SAF, předvyplněno) |
-| Téma | tmavé výchozí, Material 3 dynamic colors, fallback akcent oranžová `#FF8A3D`; haptika při dokončení přenosu |
+| Téma | ~~tmavé výchozí, Material 3 dynamic colors, fallback akcent oranžová `#FF8A3D`~~ → nahrazeno vizuálem „Dvě světla · beton“ (níž); haptika při dokončení přenosu |
+
+## Vizuál „Dvě světla · beton“ (zamčeno Nickym 8. 11. 2026)
+
+Vychází z měření všech 435 snímků na kartě: dva póly světla — **sodíková amber** (190 velmi teplých) a **modrá hodina / LED** (68 velmi chladných), liminální prázdná místa (parkoviště 07:03, kolonáda s LED, sila, bar ve 2:26), 16:9. Retro‑futurismus = LED číslice; brutalismus = pohledový beton.
+
+| Prvek | Pravidlo |
+|---|---|
+| Pozadí | svislý přechod modrá hodina nahoře (`#13222D`) → sodík dole (`#24170A`), jemné zrno; žádné dynamic colors |
+| Barvy rolí | **tyrkys** `#5FD3C4` = ověřeno / Agent běží; **sodík** `#FFB34A` = výběr a akce; **červená** `#FF6B5A` = chyba a mazání; chladný text `#CFEEFC` a LED bílá `#E9F7FF` pro čísla |
+| Beton | karty Domů s otisky bednění (prkna po 18 dp), seříznuté rohy (`CutCornerShape` 10 dp vlevo nahoře a vpravo dole), otvory po spínacích tyčích, šablonová čísla podlaží `01`, `02`; mezi kartami spára |
+| Čísla | LED číslice s „duchem“ `888` a září (počet nových snímků) |
+| Průběh | sloupořadí (≤ 24 sloupů), plní se sodíkem |
+| Hlavní akce | vykonzolované tlačítko (sodík, stín pod konzolou); vedlejší jako obrysové |
+| Mřížka | 2 sloupce 16:9, zapuštěné rámy; snímky na výšku otočené podle EXIF Orientation z hlavičky ARW (první 4 KB přes Range, cache) a vložené celé (`Fit`) |
+| Dialogy | plochý beton `#151B21`, seříznuté rohy; mazání: červené „Nevratné…“, podržení 1,5 s s červenou výplní |
+| Texty | lidské věty („A7 II je blízko.“, „Tělo spí.“), lidská jména apek, bez interních kódů fází |
+
+Kód: `app/.../ui/Theme.kt` (paleta), `ui/Beton.kt` (komponenty). Makety s Nickyho fotkami zůstávají mimo repo.
