@@ -46,7 +46,9 @@ fun Onboarding(vm: AppViewModel, onDone: () -> Unit) {
                 Spacer(Modifier.height(12.dp))
                 Text("Každý přenos dostane podsložku s datem. Vyber složku Pictures/Rincewinder (nebo ji vytvoř) — je to jediná věc, kterou tu budeš psát.")
                 Spacer(Modifier.height(24.dp))
-                Button(onClick = { pick.launch(null) }, Modifier.fillMaxWidth().height(64.dp)) { Text("Vybrat složku") }
+                // výběr začne rovnou v Pictures (kořen úložiště Android stejně nepovolí)
+                val pictures = Uri.parse("content://com.android.externalstorage.documents/document/primary%3APictures")
+                Button(onClick = { pick.launch(pictures) }, Modifier.fillMaxWidth().height(64.dp)) { Text("Vybrat složku") }
             }
             1 -> {
                 val ask = rememberPermissionRequester { step = 2 }

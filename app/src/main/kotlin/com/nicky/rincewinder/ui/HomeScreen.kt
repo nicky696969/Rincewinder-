@@ -121,6 +121,8 @@ fun HomeScreen(vm: AppViewModel, modifier: Modifier, onPickManually: () -> Unit,
             when {
                 !agentUp -> Text("Zjistím, až poběží Agent.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 st?.cardPresent == false -> Text("Karta v těle chybí")
+                ask != null -> Text("Čekám na volbu prvního spárování…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                records.isEmpty() && !vm.prefs.firstPairingDone -> Text("Načítám kartu…", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 records.isEmpty() -> Text("Na kartě nejsou žádné ARW")
                 summary.count == 0 -> Text("Vše staženo ✓")
                 else -> {
