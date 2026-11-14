@@ -77,6 +77,11 @@ object Format {
         "com.github.ma1co.openmemories.appstore" -> "OpenMemories App Store"
         "com.jonasjuffinger.timelapse" -> "Timelapse"
         "com.obsidium.focusbracket" -> "Focus Bracket"
+        "com.obsidium.bettermanual" -> "BetterManual"
+        "org.bostwickenator.dofmath" -> "dof-math"
+        "info.schnatterer.pmcaFilesystemServer" -> "pmcaFilesystemServer"
+        "com.github.LubikR.synologyuploader" -> "Synology Uploader"
+        "com.github.ma1co.pmcademo.app" -> "PMCADemo"
         else -> pkg.substringAfterLast('.')
     }
 }

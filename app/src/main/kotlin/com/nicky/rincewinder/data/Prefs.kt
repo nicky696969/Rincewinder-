@@ -42,4 +42,13 @@ class Prefs(ctx: Context) {
     var firstPairingDone: Boolean
         get() = p.getBoolean("firstPairingDone", false)
         set(v) = p.edit { putBoolean("firstPairingDone", v) }
+
+    /** Sledovaná veřejná GitHub repa (`owner/repo`) pro instalaci APK; výchozí = vlastní repo Rincewinderu. */
+    var ghRepos: List<String>
+        get() = (p.getString("ghRepos", null) ?: DEFAULT_REPO).lineSequence().filter { it.isNotBlank() }.toList()
+        set(v) = p.edit { putString("ghRepos", v.distinct().joinToString("\n")) }
+
+    companion object {
+        const val DEFAULT_REPO = "nicky696969/Rincewinder-"
+    }
 }

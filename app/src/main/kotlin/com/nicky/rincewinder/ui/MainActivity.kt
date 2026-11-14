@@ -51,7 +51,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) vm.handleIntent(intent)
         setContent { RincewinderTheme { Root(vm) } }
+    }
+
+    /** Sdílet / Otevřít v do už běžící appky (launchMode singleTask). */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        vm.handleIntent(intent)
     }
 
     override fun onResume() {
@@ -73,6 +81,8 @@ private fun Root(vm: AppViewModel) {
     val toast by vm.toast.collectAsState()
     LaunchedEffect(toast) { toast?.let { snack.showSnackbar(it); vm.toastShown() } }
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    val goTo by vm.goToTab.collectAsState()
+    LaunchedEffect(goTo) { goTo?.let { tab = it; vm.tabShown() } }
     val ctx = LocalContext.current
 
     val scanner = remember { GmsBarcodeScanning.getClient(ctx) }

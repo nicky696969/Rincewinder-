@@ -19,6 +19,7 @@ class App : Application() {
         store = JsonFileStore(File(filesDir, "files.json"))
         finder = BodyFinder(this, prefs)
         Notif.ensureChannels(this)
+        com.nicky.rincewinder.body.ApkStage.cleanup(this)
     }
 
     companion object {

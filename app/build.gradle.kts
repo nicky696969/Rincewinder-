@@ -12,8 +12,8 @@ android {
         applicationId = "com.nicky.rincewinder"
         minSdk = 34
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0-m4"
+        versionCode = 2
+        versionName = "1.0.0-rc1"
     }
 
     buildTypes {
