@@ -1,5 +1,14 @@
 package com.nicky.rincewinder.ui
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -271,5 +280,59 @@ fun SelectDot(selected: Boolean, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         if (selected) Text("✓", color = Palette.OnSodium, fontWeight = FontWeight.Black, fontSize = 13.sp)
+    }
+}
+
+/** Stavový proužek těla nad všemi kartami: lampa, baterie, karta, Wi‑Fi. Bez Agenta jen stav spojení. */
+@Composable
+fun StatusStrip(body: com.nicky.rincewinder.body.BodyState, modifier: Modifier = Modifier) {
+    val st = body.status
+    val (lamp, word) = when {
+        st != null -> Palette.Teal to "A7 II"
+        body.searching -> Palette.Sodium to "hledám"
+        body.link == com.nicky.rincewinder.core.BodyLink.NIC_NEODPOVIDA -> Palette.Red to "spí"
+        else -> Palette.Sodium to "bez Agenta"
+    }
+    Row(
+        modifier.fillMaxWidth().background(Palette.Flat).border(1.dp, Palette.FlatBorder).padding(horizontal = 12.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Lamp(lamp)
+        StripCell("Tělo", word)
+        StripCell("Baterie", st?.batteryPct?.let { "$it %" } ?: "—")
+        StripCell("Karta", st?.cardFree?.let { Format.bytes(it) } ?: "—")
+        StripCell("Wi‑Fi", st?.wifiDbm?.let { "$it dBm" } ?: "—")
+    }
+}
+
+@Composable
+private fun StripCell(label: String, value: String) {
+    Column {
+        Text(label.uppercase(), color = Palette.ColdLabel, fontSize = 9.sp, letterSpacing = 0.14.em)
+        Text(value, color = Palette.Text, fontSize = 13.sp)
+    }
+}
+
+/** Potvrzení všeho nevratného: podržení 1,5 s, výplň roste zleva. Puštění dřív akci zruší. */
+@Composable
+fun HoldButton(text: String, onConfirmed: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, color: Color = Palette.Red) {
+    var holding by remember { mutableStateOf(false) }
+    var progress by remember { mutableFloatStateOf(0f) }
+    var fired by remember { mutableStateOf(false) }
+    LaunchedEffect(holding) {
+        if (holding) {
+            val start = System.currentTimeMillis()
+            while (holding && progress < 1f) { progress = (System.currentTimeMillis() - start) / 1500f; delay(30) }
+            if (holding && progress >= 1f && !fired) { fired = true; onConfirmed() }
+        } else if (!fired) progress = 0f
+    }
+    Box(
+        modifier.fillMaxWidth().height(56.dp).background(Palette.ConcreteDark)
+            .drawBehind { drawRect(color, size = Size(size.width * progress.coerceIn(0f, 1f), size.height)) }
+            .border(1.dp, if (enabled) color.copy(alpha = 0.6f) else Palette.FlatBorder)
+            .pointerInput(enabled) { if (enabled) detectTapGestures(onPress = { holding = true; tryAwaitRelease(); holding = false }) },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("$text · PODRŽ 1,5 s", color = if (enabled) Palette.Text else Palette.Mute, letterSpacing = 0.14.em, fontSize = 13.sp, fontWeight = FontWeight.Bold)
     }
 }

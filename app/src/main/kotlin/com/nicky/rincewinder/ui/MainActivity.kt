@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -97,6 +98,10 @@ private fun Root(vm: AppViewModel) {
     Box(Modifier.fillMaxSize().background(Palette.Sky).grain()) { Scaffold(
         containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snack) },
+        topBar = {
+            val body by vm.body.collectAsState()
+            StatusStrip(body, Modifier.statusBarsPadding().padding(start = 16.dp, end = 16.dp, top = 6.dp))
+        },
         bottomBar = {
             Column {
                 Joint()

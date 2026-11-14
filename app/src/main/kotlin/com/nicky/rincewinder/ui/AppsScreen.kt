@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -124,7 +127,7 @@ fun AppsScreen(vm: AppViewModel, modifier: Modifier) {
     }
 
     val detail = apps?.firstOrNull { it.first.pkg == detailPkg }
-    if (detail != null) AppDetailDialog(vm, detail.first, detail.second, busy == null) { detailPkg = null }
+    if (detail != null) AppDetailSheet(vm, detail.first, detail.second, busy == null) { detailPkg = null }
 
     installAsk?.let { a ->
         val inst = apps?.firstOrNull { it.first.pkg == a.pkg }?.first
@@ -173,59 +176,42 @@ private fun InstallDialog(a: StagedApk, installed: BodyApp?, agentRunning: Boole
     )
 }
 
-/** Detail aplikace v těle: údaje z `dumpsys package` a akce. Nevratné akce se potvrzují druhým krokem. */
+/** Detail aplikace v těle jako spodní list: údaje z `dumpsys package` a akce. Nevratné akce podržením 1,5 s. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppDetailDialog(vm: AppViewModel, app: BodyApp, running: Boolean, idle: Boolean, onClose: () -> Unit) {
-    var confirm by remember { mutableStateOf<String?>(null) } // "clear" | "uninstall"
+private fun AppDetailSheet(vm: AppViewModel, app: BodyApp, running: Boolean, idle: Boolean, onClose: () -> Unit) {
     val size by produceState<Long?>(null, app.codePath) { value = app.codePath?.let { vm.apkSize(it) } }
     val cardFiles = remember(app.pkg) { vm.cardFilesOf(app.pkg) }
-    AlertDialog(
-        onDismissRequest = onClose,
-        containerColor = Palette.Flat, shape = Chamfer,
-        title = { Text(Format.appName(app.pkg), fontWeight = FontWeight.Light) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Info("balíček", app.pkg)
-                Info("verze", listOfNotNull(app.versionName, app.versionCode?.let { "kód $it" }).joinToString(" · ").ifEmpty { "?" })
-                Info("stav", if (running) "běží" else "neběží")
-                size?.let { Info("velikost APK", Format.bytes(it)) }
-                app.firstInstall?.let { Info("nainstalováno", it) }
-                app.lastUpdate?.takeIf { it != app.firstInstall }?.let { Info("aktualizováno", it) }
-                app.targetSdk?.let { Info("cílové API", it.toString()) }
-                Text("Časy jsou z hodin těla.", color = Palette.Mute, fontSize = 11.sp)
-
-                when (confirm) {
-                    null -> {
-                        if (running) GhostButton("Ukončit", { vm.stopApp(app.pkg); onClose() }, enabled = idle, color = Palette.ColdText)
-                        else GhostButton("Spustit v těle", { vm.launchApp(app.pkg); onClose() }, enabled = idle)
-                        GhostButton("Zálohovat APK do Pixelu", { vm.backupApp(app); onClose() }, enabled = idle && app.codePath != null, color = Palette.ColdText)
-                        if (cardFiles.isNotEmpty()) GhostButton("Stáhnout ${cardFiles.joinToString(", ")}", { vm.fetchCardFiles(app.pkg); onClose() }, enabled = idle, color = Palette.ColdText)
-                        GhostButton("Vymazat data aplikace", { confirm = "clear" }, enabled = idle, color = Palette.Sodium)
-                        GhostButton("Odinstalovat", { confirm = "uninstall" }, enabled = idle, color = Palette.Red)
-                    }
-                    "clear" -> {
-                        Text("Smaže nastavení a data aplikace v těle. Nevratné.", color = Palette.Red, fontSize = 13.sp)
-                        GhostButton("Opravdu vymazat data", { vm.clearApp(app.pkg); onClose() }, color = Palette.Red)
-                        GhostButton("Zpět", { confirm = null }, color = Palette.ColdText)
-                    }
-                    else -> {
-                        Text(
-                            when (app.pkg) {
-                                AdbOps.TWEAK_PKG -> "Bez Tweaku se do těla přes Wi‑Fi ani ADB nedostaneš a Rincewinder přestane instalovat aplikace. Zpátky ho dostaneš jen z počítače přes USB."
-                                AdbOps.AGENT_PKG -> "Bez Agenta nejde stahovat snímky. Znovu ho nainstaluješ z této obrazovky."
-                                else -> "Aplikace i její nastavení z těla zmizí. Nevratné."
-                            },
-                            color = Palette.Red, fontSize = 13.sp,
-                        )
-                        GhostButton("Opravdu odinstalovat", { vm.uninstallApp(app.pkg); onClose() }, color = Palette.Red)
-                        GhostButton("Zpět", { confirm = null }, color = Palette.ColdText)
-                    }
-                }
+    ModalBottomSheet(onDismissRequest = onClose, containerColor = Palette.Flat, shape = RectangleShape) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                Text(Format.appName(app.pkg), color = Palette.Text, fontSize = 19.sp, fontWeight = FontWeight.Light)
+                Text(if (running) "běží" else "neběží", color = if (running) Palette.Teal else Palette.Mute, fontSize = 12.sp)
             }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onClose) { Text("Zavřít", color = Palette.ColdText) } },
-    )
+            Info("balíček", app.pkg)
+            Info("verze", listOfNotNull(app.versionName, app.versionCode?.let { "kód $it" }).joinToString(" · ").ifEmpty { "?" })
+            size?.let { Info("velikost APK", Format.bytes(it)) }
+            app.firstInstall?.let { Info("nainstalováno", it) }
+            app.lastUpdate?.takeIf { it != app.firstInstall }?.let { Info("aktualizováno", it) }
+            app.targetSdk?.let { Info("cílové API", it.toString()) }
+            Text("Časy jsou z hodin těla.", color = Palette.Mute, fontSize = 11.sp)
+
+            if (running) GhostButton("Ukončit", { vm.stopApp(app.pkg); onClose() }, enabled = idle, color = Palette.ColdText)
+            else GhostButton("Spustit v těle", { vm.launchApp(app.pkg); onClose() }, enabled = idle)
+            GhostButton("Zálohovat APK do Pixelu", { vm.backupApp(app); onClose() }, enabled = idle && app.codePath != null, color = Palette.ColdText)
+            if (cardFiles.isNotEmpty()) GhostButton("Stáhnout ${cardFiles.joinToString(", ")}", { vm.fetchCardFiles(app.pkg); onClose() }, enabled = idle, color = Palette.ColdText)
+            HoldButton("VYMAZAT DATA", { vm.clearApp(app.pkg); onClose() }, enabled = idle, color = Palette.SodiumDeep)
+            HoldButton("ODINSTALOVAT", { vm.uninstallApp(app.pkg); onClose() }, enabled = idle)
+            Text(
+                when (app.pkg) {
+                    AdbOps.TWEAK_PKG -> "Pozor: bez Tweaku se do těla přes Wi‑Fi ani ADB nedostaneš. Zpátky ho dostaneš jen z počítače přes USB."
+                    AdbOps.AGENT_PKG -> "Bez Agenta nejde stahovat snímky. Znovu ho nainstaluješ z této obrazovky."
+                    else -> "Vymazání dat i odinstalace jsou nevratné."
+                },
+                color = if (app.pkg == AdbOps.TWEAK_PKG) Palette.Red else Palette.Mute, fontSize = 12.sp,
+            )
+        }
+    }
 }
 
 @Composable

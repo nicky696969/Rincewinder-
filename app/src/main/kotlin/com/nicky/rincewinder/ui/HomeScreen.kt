@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -60,7 +61,8 @@ fun HomeScreen(vm: AppViewModel, modifier: Modifier, onPickManually: () -> Unit,
         )
     }
 
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier.fillMaxSize()) {
+    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Header()
 
         // 01 · TĚLO (studené světlo)
@@ -139,6 +141,16 @@ fun HomeScreen(vm: AppViewModel, modifier: Modifier, onPickManually: () -> Unit,
             st?.cardFree?.let { if (it < 1L shl 30) Text("Karta téměř plná — smaž ověřené (${records.count { r -> r.isDeletable }})", color = Palette.Sodium, fontSize = 12.sp) }
         }
 
+        vm.prefs.lastTransferSummary?.let {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Label("Poslední přenos", Palette.MuteWarm)
+                Text(it, color = Palette.Mute, fontSize = 12.sp)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+    // hlavní akce u palce: ukotvená nad spodní lištou, obsah se posouvá pod ní
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (transfer.running) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 ColumnProgress(transfer.doneFiles, transfer.totalFiles, active = transfer.waitingForBody == null)
@@ -165,13 +177,7 @@ fun HomeScreen(vm: AppViewModel, modifier: Modifier, onPickManually: () -> Unit,
             }
         }
 
-        vm.prefs.lastTransferSummary?.let {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Label("Poslední přenos", Palette.MuteWarm)
-                Text(it, color = Palette.Mute, fontSize = 12.sp)
-            }
-        }
-        Spacer(Modifier.height(8.dp))
+    }
     }
 }
 
