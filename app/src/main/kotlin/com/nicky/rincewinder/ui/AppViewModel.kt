@@ -237,17 +237,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val l = SafLocalFiles(getApplication(), android.net.Uri.parse(uri), "logy")
         val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmm", java.util.Locale.ROOT).format(java.util.Date())
         var n = 0
+        val failed = ArrayList<String>()
         for (name in cardFilesOf(pkg)) {
-            val got = runCatching {
+            val path = l.targetPath("${stamp}_$name")
+            runCatching {
+                if (l.exists(path) && !l.delete(path)) throw java.io.IOException("starý soubor nejde přepsat")
                 c.openFile(name).use { fs ->
-                    val path = l.targetPath("${stamp}_$name")
-                    if (l.exists(path) && !l.delete(path)) throw java.io.IOException("starý soubor nejde přepsat")
-                    l.appendFrom(path, fs.input)
+                    val got = l.appendFrom(path, fs.input)
+                    // délka musí sedět s tím, co Agent ohlásil; jinak je kopie neúplná
+                    if (fs.length >= 0 && got != fs.length) throw java.io.IOException("staženo $got z ${fs.length} B")
                 }
-            }.isSuccess
-            if (got) n++
+            }.onSuccess { n++ }.onFailure { e ->
+                l.delete(path) // žádné prázdné ani useknuté soubory
+                if (!(e is java.io.IOException && e.message?.contains("HTTP 404") == true)) failed += "$name (${e.message})"
+            }
         }
-        if (n == 0) "Na kartě žádný z těch souborů není" else "Staženo do ${l.dirName}: ${Format.plural(n, "soubor", "soubory", "souborů")}"
+        when {
+            failed.isNotEmpty() -> "Staženo $n, selhalo: ${failed.joinToString()}"
+            n == 0 -> "Na kartě žádný z těch souborů není"
+            else -> "Staženo do ${l.dirName}: ${Format.plural(n, "soubor", "soubory", "souborů")}"
+        }
     }
 
     // --- Instalace APK: soubor / Sdílet / odkaz / GitHub ---
