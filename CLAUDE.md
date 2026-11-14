@@ -81,7 +81,7 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 | Android | 4.1.2 (SDK 16), Sony Java API 2.10, Tweak 0.11, region CX78601_CEC |
 | IP na domácí Wi‑Fi | **192.168.1.105** (8. 11. 2026, síť 192.168.1.x; dřív 10.98.92.25 — jiný AP). Spolehlivé je hledat podle MAC `a0:c9:a0:ce:95:ad` (sken 5555 + `arp -a`) |
 | Na těle (8. 11. 2026) | **Rincewinder Agent 0.2.0** (`secured: true`, klíč v QR), spustitelný z PC `adb shell am startservice -n com.nicky.rincewinder.agent/.AgentService` — 0 kroků na těle, pokud běží adbd. Karta 128 GB (106 GB volných) |
-| `:dadb-fork` proti tělu | **ověřeno 8. 11.**: handshake bez `features`, legacy `shell:` s rc, `pm list packages -3`. Install přes fork zatím netestován (adb install z PC funguje) |
+| `:dadb-fork` proti tělu | **ověřeno 8. 11.**: handshake bez `features`, legacy `shell:` s rc, `pm list packages -3`. **Install přes fork ověřen 14. 11.** po opravě kontrolního součtu paketu (adbd 4.1 součet ověřuje) |
 | ADB přes Wi‑Fi z PC | funguje (`adb install -r`, logcat) |
 | Karta | bere jen názvy 8.3 (proto `TRAPFOC.LOG`); FUSE `FuFsys`, kořen: `DCIM`, `PRIVATE/{AVCHD,M4ROOT,SONY}`, `MP_ROOT`, `TWEAKLOG.TXT` |
 | Wi‑Fi těla | rozhraní `ath0` (Atheros), 2,4 GHz ch 11, −48 dBm, MCS6 58,5 Mb/s, **power save ON**, IPv6 globální |
@@ -122,7 +122,7 @@ Nickyho požadavek: maximální uživatelské možnosti a pohodlí.
 | ~~F0~~ | **hotovo 30. 10. 2026** — viz Ověřená fakta a Prostředí na Aceru | Claude Code |
 | **F0b** | sonda na těle: mini Agent APK (Service + HTTP range GET + reflexe Sony API) — přežije Service MENU? propustnost HTTP? WakeLock drží tělo? `am startservice`? Návrh: `docs/F0B_SONDA.md` | Claude Code (teď) |
 | **F1** | M1 `:core`, M2 Agent 0.2.0 (na těle), M3 `:dadb-fork` (ověřen živě), M4 `:app` (Pixel, Android 17: onboarding, Domů, mřížka, FGS; **běží na Pixelu, 8. 11.**), M5 částečně (stažení + ověření 11 ARW, výpadek a navázání — hotovo; **mazání z karty netestováno**) , design kolo **hotovo 8. 11.** (vizuál „Dvě světla · beton“, `docs/UX_NAVRH.md`) — zbývá M6 dokumentace, test mazání. Zadání `docs/ZADANI_F1.md` | Fable |
-| F2 | správce APK (GitHub Releases, podpisy) + diagnostika (logcat, baterie, místo) + fronta/mazání s potvrzením | Fable |
+| F2 | správce APK — **hotovo 14. 11. 2026 ve verzi 1.0.0** (detail, akce, instalace ze souboru / Sdílet / odkazu / GitHubu; ověřeno na těle, viz `CHANGELOG.md`); zbývá diagnostika (balík logů, logcat), kontrola podpisu předem | Fable |
 | F3 | OTG kopírování (MTP / Mass Storage) — hromadný sync | Fable |
 | F4 | PMCA instalátor přes OTG: největší riziko, port protokolu Sony-PMCA-RE (MIT) | Fable, předtím rešerše protokolu (docs v repu) |
 | F5 | metadata (GPS, kód objektivu), export | Fable |
