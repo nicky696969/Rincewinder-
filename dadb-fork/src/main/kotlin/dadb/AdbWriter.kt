@@ -86,7 +86,7 @@ internal class AdbWriter(sink: Sink) : AutoCloseable {
                         writeIntLe(0)
                     } else {
                         writeIntLe(length)
-                        writeIntLe(payloadChecksum(payload))
+                        writeIntLe(payloadChecksum(payload, offset, length))
                     }
                     writeIntLe(command xor -0x1)
                     if (payload != null) {
@@ -110,10 +110,13 @@ internal class AdbWriter(sink: Sink) : AutoCloseable {
 
     companion object {
 
-        private fun payloadChecksum(payload: ByteArray): Int {
+        // RINCEWINDER: součet jen přes odeslaný úsek [offset, offset+length). Stream posílá pevný
+        // 4KB buffer s kratší délkou (hlavička sync:, poslední blok souboru); adbd na Androidu 4.1
+        // (A_VERSION 0x01000000) součet ještě ověřuje a při neshodě spojení zavře → push/instalace padala.
+        private fun payloadChecksum(payload: ByteArray, offset: Int, length: Int): Int {
             var checksum = 0
-            for (byte in payload) {
-                checksum += byte.toUByte().toInt()
+            for (i in offset until offset + length) {
+                checksum += payload[i].toUByte().toInt()
             }
             return checksum
         }
